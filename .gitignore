@@ -1,0 +1,10 @@
+msvcdbg/
+*.b
+*.bf
+*.exe
+*.ilk
+*.lib
+*.o
+*.obj
+*.out
+*.pdb
