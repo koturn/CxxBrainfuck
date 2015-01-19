@@ -27,7 +27,7 @@ main(int argc, char *argv[])
 #else
     bf.compile(Brainfuck::XBYAK_JIT_COMPILE);
 #endif
-    bf.execute();
+    bf.translate(Brainfuck::LANG_CPP);
   } catch (const char *errmsg) {
     std::cerr << errmsg << std::endl;
     return EXIT_FAILURE;

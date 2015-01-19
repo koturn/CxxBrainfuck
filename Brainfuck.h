@@ -11,6 +11,8 @@
 #  include <xbyak/xbyak.h>
 #endif
 
+#include "CodeGenerator/CodeGenerator.h"
+
 
 class Brainfuck {
 public:
@@ -20,6 +22,16 @@ public:
     , XBYAK_JIT_COMPILE
 #endif  // USE_XBYAK
   } CompileType;
+
+  typedef enum {
+    LANG_C,
+    LANG_CPP,
+    LANG_CSHARP,
+    LANG_JAVA,
+    LANG_LUA,
+    LANG_PYTHON,
+    LANG_RUBY
+  } LANG;
 
   Brainfuck(std::size_t memorySize=65536) :
     memorySize(memorySize), sourceBuffer(NULL), compileType(NO_COMPILE)
@@ -33,6 +45,7 @@ public:
   void trim(void);
   void compile(CompileType compileType=NORMAL_COMPILE);
   void execute(void);
+  void translate(LANG lang=LANG_C);
 #ifdef USE_XBYAK
   void xbyakDump(void);
 #endif  // USE_XBYAK
@@ -65,6 +78,7 @@ private:
   void normalCompile(void);
   void interpretExecute(void);
   void compileExecute(void);
+  void generateCode(CodeGenerator &tmpl);
 #ifdef USE_XBYAK
   void xbyakJitCompile(void);
   void xbyakJitExecute(void);

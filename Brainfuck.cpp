@@ -12,6 +12,7 @@
 #  include <xbyak/xbyak.h>
 #endif  // USE_XBYAK
 #include "Brainfuck.h"
+#include "CodeGenerator/_AllGenerator.h"
 
 
 static const char *
@@ -183,6 +184,56 @@ Brainfuck::xbyakDump(void)
             << std::endl;
 }
 #endif  // USE_XBYAK
+
+
+void
+Brainfuck::translate(LANG lang)
+{
+  switch (lang) {
+    case LANG_C:
+      {
+        GeneratorC cg("  ");
+        generateCode(cg);
+      }
+      break;
+    case LANG_CPP:
+      {
+        GeneratorCpp cg("  ");
+        generateCode(cg);
+      }
+      break;
+    case LANG_CSHARP:
+      {
+        GeneratorCSharp cg("    ");
+        generateCode(cg);
+      }
+      break;
+    case LANG_JAVA:
+      {
+        GeneratorJava cg("    ");
+        generateCode(cg);
+      }
+      break;
+    case LANG_LUA:
+      {
+        GeneratorLua cg("    ");
+        generateCode(cg);
+      }
+      break;
+    case LANG_PYTHON:
+      {
+        GeneratorPython cg("    ");
+        generateCode(cg);
+      }
+      break;
+    case LANG_RUBY:
+      {
+        GeneratorRuby cg("  ");
+        generateCode(cg);
+      }
+      break;
+  }
+}
 
 
 
@@ -468,6 +519,45 @@ Brainfuck::xbyakJitExecute(void)
     (Xbyak::CastTo<void *>(putchar), Xbyak::CastTo<void *>(getchar), xbyakRtStack);
 }
 #endif  // USE_XBYAK
+
+
+void
+Brainfuck::generateCode(CodeGenerator &cg)
+{
+  if (commands.size() == 0 && compileType != NO_COMPILE) {
+    compile();
+  }
+  cg.printHeader();
+  for (std::vector<Command>::size_type pc = 0, size = commands.size(); pc < size; pc++) {
+    switch (commands[pc].type) {
+      case PTR_ADD:
+        cg.printPtrAdd(commands[pc].value);
+        break;
+      case PTR_SUB:
+        cg.printPtrSub(commands[pc].value);
+        break;
+      case ADD:
+        cg.printAdd(commands[pc].value);
+        break;
+      case SUB:
+        cg.printSub(commands[pc].value);
+        break;
+      case PUTCHAR:
+        cg.printPutchar();
+        break;
+      case GETCHAR:
+        cg.printGetchar();
+        break;
+      case LOOP_START:
+        cg.printLoopStart();
+        break;
+      case LOOP_END:
+        cg.printLoopEnd();
+        break;
+    }
+  }
+  cg.printFooter();
+}
 
 
 
