@@ -3,6 +3,9 @@ Brainfuck
 
 Brainfuck interpreter.
 
+This program provides normal Brainfuck interpreter, Brainfuck interpreter with
+simple compile and Brainfuck interpreter with JIt-compile of Brainfuck.
+
 
 ## Usage
 
@@ -55,6 +58,8 @@ Use [msvc.mk](msvc.mk).
 
 
 ## Dependent libraries
+
+- [Xbyak](https://github.com/herumi/xbyak)
 
 #### MSVC only
 

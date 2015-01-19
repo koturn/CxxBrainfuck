@@ -1,9 +1,16 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <stack>
 
+#ifdef USE_XBYAK
+#  if !defined(XBYAK_NO_OP_NAMES) && defined(__GNUC__)
+#    define  XBYAK_NO_OP_NAMES
+#  endif
+#  include <xbyak/xbyak.h>
+#endif  // USE_XBYAK
 #include "Brainfuck.h"
 
 
@@ -16,13 +23,30 @@ findLoopStart(const char *srcptr);
 static unsigned int
 countChar(const char *srcptr, char ch);
 
+#ifdef USE_XBYAK
+typedef enum {
+  B, F
+} Direction;
 
+inline static std::string
+toStr(int labelNo, Direction dir);
+#endif  // USE_XBYAK
+
+
+
+
+/* ========================================================================= *
+ * Public members                                                            *
+ * ========================================================================= */
 /*!
  * @brief Destructor: Delete alocated memory
  */
 Brainfuck::~Brainfuck(void)
 {
   delete[] sourceBuffer;
+#ifdef USE_XBYAK
+  delete[] xbyakRtStack;
+#endif  // USE_XBYAK
 }
 
 
@@ -74,6 +98,28 @@ Brainfuck::trim(void)
 
 
 /*!
+ * @brief Compile brainfuck source code
+ * @param [in] compileType  Type of compile
+ */
+void
+Brainfuck::compile(CompileType compileType)
+{
+  switch (compileType) {
+    case NO_COMPILE:
+      break;
+    case NORMAL_COMPILE:
+      normalCompile();
+      break;
+#ifdef USE_XBYAK
+    case XBYAK_JIT_COMPILE:
+      xbyakJitCompile();
+      break;
+#endif  // USE_XBYAK
+  }
+}
+
+
+/*!
  * @brief Execute brainfuck source code
  */
 void
@@ -83,11 +129,119 @@ Brainfuck::execute(void)
     case NO_COMPILE:
       interpretExecute();
       break;
-    case NORMAL:
+    case NORMAL_COMPILE:
       compileExecute();
       break;
+#ifdef USE_XBYAK
+    case XBYAK_JIT_COMPILE:
+      xbyakJitExecute();
+      break;
+#endif  // USE_XBYAK
   }
   std::cout.put('\n');
+}
+
+
+#ifdef USE_XBYAK
+/*!
+ * @brief Dump jit-compiled binaries in C-source code
+ */
+void
+Brainfuck::xbyakDump(void)
+{
+  const Xbyak::uint8 *code = generator.getCode();
+  std::size_t size = generator.getSize();
+  std::cout << "#include <stdio.h>\n"
+            << "#include <stdlib.h>\n"
+#ifdef __linux__
+            << "#include <unistd.h>\n"
+            << "#include <sys/mman.h>\n"
+#endif
+            << "\n"
+            << "static int stack[128 * 1024];\n"
+            << "static const unsigned char code[] = {\n";
+  std::cout << std::hex << " ";
+  for (std::size_t i = 0; i < size; i++) {
+    std::cout << " 0x" << std::setfill('0') << std::setw(2)
+              << static_cast<unsigned int>(code[i]) << ",";
+    if (i % 16 == 15) {
+      std::cout << "\n ";
+    }
+  }
+  std::cout << std::dec
+            << "\n};\n\n\n"
+            << "int\n"
+            << "main(void)\n"
+            << "{\n"
+#ifdef __linux__
+            << "  long pageSize = sysconf(_SC_PAGESIZE) - 1;\n"
+            << "  mprotect((void *) code, (sizeof(code) + pageSize) & ~pageSize, PROT_READ | PROT_EXEC);\n"
+#endif
+            << "  ((void (*)(void *, void *, int *)) code)((void *) putchar, (void *) getchar, stack);\n"
+            << "  return EXIT_SUCCESS;\n"
+            << "}"
+            << std::endl;
+}
+#endif  // USE_XBYAK
+
+
+
+
+/* ========================================================================= *
+ * Private members                                                           *
+ * ========================================================================= */
+/*!
+ * @brief Compile brainfuck code to Instruction set
+ */
+void
+Brainfuck::normalCompile(void)
+{
+  std::stack<unsigned int> loopStack;
+  for (const char *srcptr = sourceBuffer; *srcptr != '\0'; srcptr++) {
+    Command cmd;
+    switch (*srcptr) {
+      case '>':
+        cmd.type = PTR_ADD;
+        cmd.value = countChar(srcptr, *srcptr);
+        srcptr += cmd.value - 1;
+        break;
+      case '<':
+        cmd.type = PTR_SUB;
+        cmd.value = countChar(srcptr, *srcptr);
+        srcptr += cmd.value - 1;
+        break;
+      case '+':
+        cmd.type = ADD;
+        cmd.value = countChar(srcptr, *srcptr);
+        srcptr += cmd.value - 1;
+        break;
+      case '-':
+        cmd.type = SUB;
+        cmd.value = countChar(srcptr, *srcptr);
+        srcptr += cmd.value - 1;
+        break;
+      case '.':
+        cmd.type = PUTCHAR;
+        cmd.value = 0;
+        break;
+      case ',':
+        cmd.type = GETCHAR;
+        cmd.value = 0;
+        break;
+      case '[':
+        cmd.type = LOOP_START;
+        loopStack.push(static_cast<unsigned int>(commands.size()));
+        break;
+      case ']':
+        cmd.type = LOOP_END;
+        cmd.value = loopStack.top();
+        commands[loopStack.top()].value = static_cast<unsigned int>(commands.size() - 1);
+        loopStack.pop();
+        break;
+    }
+    commands.push_back(cmd);
+  }
+  compileType = NORMAL_COMPILE;
 }
 
 
@@ -171,61 +325,156 @@ Brainfuck::compileExecute(void)
 }
 
 
+#ifdef USE_XBYAK
 /*!
- * @brief Compile brainfuck code to Instruction set
+ * @brief Compile brainfuck source code with Xbyak JIT-compile
  */
 void
-Brainfuck::compile(void)
+Brainfuck::xbyakJitCompile(void)
 {
-  std::stack<unsigned int> loopStack;
+#ifdef XBYAK32
+  const Xbyak::Reg32 &pPutchar(generator.esi);
+  const Xbyak::Reg32 &pGetchar(generator.edi);
+  const Xbyak::Reg32 &stack(generator.ebp);
+  const Xbyak::Address cur = generator.dword[stack];
+  generator.push(generator.ebp);  // stack
+  generator.push(generator.esi);
+  generator.push(generator.edi);
+
+  const int P_ = 4 * 3;
+  generator.mov(pPutchar, ptr[esp + P_ + 4]);  // putchar
+  generator.mov(pGetchar, ptr[esp + P_ + 8]);  // getchar
+  generator.mov(stack, ptr[esp + P_ + 12]);  // stack
+#elif defined(XBYAK64_WIN)
+  const Xbyak::Reg64 &pPutchar(generator.rsi);
+  const Xbyak::Reg64 &pGetchar(generator.rdi);
+  const Xbyak::Reg64 &stack(generator.rbp);  // stack
+  const Xbyak::Address cur = generator.dword[stack];
+  generator.push(generator.rsi);
+  generator.push(generator.rdi);
+  generator.push(generator.rbp);
+  generator.mov(pPutchar, generator.rcx);  // putchar
+  generator.mov(pGetchar, generator.rdx);  // getchar
+  generator.mov(stack, generator.r8);  // stack
+#else
+  const Xbyak::Reg64& pPutchar(generator.rbx);
+  const Xbyak::Reg64& pGetchar(generator.rbp);
+  const Xbyak::Reg64& stack(generator.r12);  // stack
+  const Xbyak::Address cur = generator.dword[stack];
+  generator.push(generator.rbx);
+  generator.push(generator.rbp);
+  generator.push(generator.r12);
+  generator.mov(pPutchar, generator.rdi);  // putchar
+  generator.mov(pGetchar, generator.rsi);  // getchar
+  generator.mov(stack, generator.rdx);  // stack
+#endif  // XBYAK32
+  int labelNo = 0;
+  std::stack<int> keepLabelNo;
   for (const char *srcptr = sourceBuffer; *srcptr != '\0'; srcptr++) {
-    Command cmd;
     switch (*srcptr) {
-      case '>':
-        cmd.type = PTR_ADD;
-        cmd.value = countChar(srcptr, *srcptr);
-        srcptr += cmd.value - 1;
-        break;
-      case '<':
-        cmd.type = PTR_SUB;
-        cmd.value = countChar(srcptr, *srcptr);
-        srcptr += cmd.value - 1;
-        break;
       case '+':
-        cmd.type = ADD;
-        cmd.value = countChar(srcptr, *srcptr);
-        srcptr += cmd.value - 1;
-        break;
       case '-':
-        cmd.type = SUB;
-        cmd.value = countChar(srcptr, *srcptr);
-        srcptr += cmd.value - 1;
+        {
+          int cnt = countChar(srcptr, *srcptr);
+          if (cnt == 1) {
+            *srcptr == '+' ? generator.inc(cur) : generator.dec(cur);
+          } else {
+            generator.add(cur, (*srcptr == '+' ? cnt : -cnt));
+          }
+          srcptr += cnt - 1;
+        }
+        break;
+      case '>':
+      case '<':
+        {
+          int cnt = countChar(srcptr, *srcptr);
+          generator.add(stack, 4 * (*srcptr == '>' ? cnt : -cnt));
+          srcptr += cnt - 1;
+        }
         break;
       case '.':
-        cmd.type = PUTCHAR;
-        cmd.value = 0;
+#ifdef XBYAK32
+        generator.push(cur);
+        generator.call(pPutchar);
+        generator.pop(generator.eax);
+#elif defined(XBYAK64_WIN)
+        generator.mov(generator.rcx, cur);
+        generator.sub(generator.rsp, 32);
+        generator.call(pPutchar);
+        generator.add(generator.rsp, 32);
+#else
+        generator.mov(generator.rdi, cur);
+        generator.call(pPutchar);
+#endif  // XBYAK32
         break;
       case ',':
-        cmd.type = GETCHAR;
-        cmd.value = 0;
+#if defined(XBYAK32) || defined(XBYAK64_GCC)
+        generator.call(pGetchar);
+        generator.mov(cur, generator.eax);
+#elif defined(XBYAK64_WIN)
+        generator.sub(generator.rsp, 32);
+        generator.call(pGetchar);
+        generator.add(generator.rsp, 32);
+        generator.mov(cur, generator.rax);
+#endif  // defined(XBYAK32) || defined(XBYAK64_GCC)
         break;
       case '[':
-        cmd.type = LOOP_START;
-        loopStack.push(static_cast<unsigned int>(commands.size()));
+        generator.L(toStr(labelNo, B));
+        generator.mov(generator.eax, cur);
+        generator.test(generator.eax, generator.eax);
+        generator.jz(toStr(labelNo, F), Xbyak::CodeGenerator::T_NEAR);
+        keepLabelNo.push(labelNo++);
         break;
       case ']':
-        cmd.type = LOOP_END;
-        cmd.value = loopStack.top();
-        commands[loopStack.top()].value = static_cast<unsigned int>(commands.size() - 1);
-        loopStack.pop();
+        {
+          int no = keepLabelNo.top();
+          keepLabelNo.pop();
+          generator.jmp(toStr(no, B));
+          generator.L(toStr(no, F));
+        }
+        break;
+      default:
         break;
     }
-    commands.push_back(cmd);
   }
-  compileType = NORMAL;
+#ifdef XBYAK32
+  generator.pop(generator.edi);
+  generator.pop(generator.esi);
+  generator.pop(generator.ebp);
+#elif defined(XBYAK64_WIN)
+  generator.pop(generator.rbp);
+  generator.pop(generator.rdi);
+  generator.pop(generator.rsi);
+#else
+  generator.pop(generator.r12);
+  generator.pop(generator.rbp);
+  generator.pop(generator.rbx);
+#endif  // XBYAK32
+  generator.ret();
+
+  compileType = XBYAK_JIT_COMPILE;
 }
 
 
+/*!
+ * @brief Execute jit compiled binary
+ */
+void
+Brainfuck::xbyakJitExecute(void)
+{
+  xbyakRtStack = new int[xbyakRtStackSize];
+  std::memset(xbyakRtStack, 0, xbyakRtStackSize);
+  generator.getCode<void (*)(void *, void *, int *)>()
+    (Xbyak::CastTo<void *>(putchar), Xbyak::CastTo<void *>(getchar), xbyakRtStack);
+}
+#endif  // USE_XBYAK
+
+
+
+
+/* ========================================================================= *
+ * Local functions                                                           *
+ * ========================================================================= */
 /*!
  * @brief Find the end of loop
  * @param [in] code  Pointer to the brainfuck source code
@@ -280,3 +529,18 @@ countChar(const char *srcptr, char ch)
   }
   return cnt;
 }
+
+
+#ifdef USE_XBYAK
+/*!
+ * @brief Convert label to string
+ * @param [in] labelNo  Label Number
+ * @param [in] dir      Direction (Backword or Forward)
+ * @return Label in string format
+ */
+inline static std::string
+toStr(int labelNo, Direction dir)
+{
+  return Xbyak::Label::toStr(labelNo) + (dir == B ? 'B' : 'F');
+}
+#endif  // USE_XBYAK

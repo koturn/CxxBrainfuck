@@ -1,4 +1,8 @@
 ### This Makefile was written for nmake. ###
+XBYAK_DIR        = xbyak
+XBYAK_REPOSITORY = https://github.com/herumi/$(XBYAK_DIR)
+XBYAK_INCS       = /I$(XBYAK_DIR)/
+
 !if "$(CRTDLL)" == "true"
 CRTLIB = /MD$(DBG_SUFFIX)
 !else
@@ -26,8 +30,8 @@ CPP      = cl
 RM       = del /F
 MAKE     = $(MAKE) /nologo
 GIT      = git
-INCS     = $(MSVCDBG_INCS)
-MACROS   = $(MSVC_MACROS)
+INCS     = $(XBYAK_INCS) $(MSVCDBG_INCS)
+MACROS   = /DUSE_XBYAK /DXBYAK_NO_OP_NAMES $(MSVC_MACROS)
 CPPFLAGS = /nologo $(COPTFLAGS) /EHsc /W4 /c $(INCS) $(MACROS)
 LDFLAGS  = /nologo $(LDOPTFLAGS)
 
@@ -47,7 +51,7 @@ MAKEFILE = msvc.mk
 	$(CPP) $(CPPFLAGS) $** /Fo$@
 
 
-all: $(MSVCDBG_DIR)/NUL $(TARGET)
+all: $(XBYAK_DIR)/xbyak/xbyak.h $(MSVCDBG_DIR)/NUL $(TARGET)
 
 $(TARGET): $(MAIN_OBJ) $(OBJ)
 
@@ -56,12 +60,16 @@ $(MAIN_OBJ): $(MAIN_SRC) $(HEADER)
 $(OBJ): $(SRC) $(HEADER)
 
 
+$(XBYAK_DIR)/xbyak/xbyak.h:
+	@if not exist $(@D)/NUL \
+		$(GIT) clone $(XBYAK_REPOSITORY)
+
 $(MSVCDBG_DIR)/NUL:
 	@if not exist $(@D)/NUL \
 		$(GIT) clone $(MSVCDBG_REPOSITORY)
 
 
 clean:
-	$(RM) $(TARGET) $(MAIN_OBJ) $(OBJ) *.pdb *.ilk
+	$(RM) $(TARGET) $(MAIN_OBJ) $(OBJ) *.ilk *.pdb
 cleanobj:
-	$(RM) $(MAIN_OBJ) $(OBJ) *.pdb *.ilk
+	$(RM) $(MAIN_OBJ) $(OBJ) *.ilk *.pdb

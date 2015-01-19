@@ -1,4 +1,8 @@
 ### This Makefile was written for GNU Make. ###
+XBYAK_DIR        := xbyak
+XBYAK_REPOSITORY := https://github.com/herumi/$(XBYAK_DIR)
+XBYAK_INCS       := -I$(XBYAK_DIR)/
+
 ifeq ($(DEBUG),true)
     CXXOPTFLAGS := -O0 -g3 -ftrapv -fstack-protector-all -D_FORTIFY_SOURCE=2 -D_GLIBCXX_DEBUG
     LDLIBS      += -lssp
@@ -24,7 +28,11 @@ C_WARNING_FLAGS := -Wall -Wextra -Wformat=2 -Wstrict-aliasing=2 \
 CXX_WARNING_FLAGS := $(C_WARNING_FLAGS) -Woverloaded-virtual
 
 CXX      := g++
-CXXFLAGS := -pipe $(CXX_WARNING_FLAGS) $(CXXOPTFLAGS)
+MAKE     := make
+GIT      := git
+INCS     := $(XBYAK_INCS)
+MACROS   := -DUSE_XBYAK -DXBYAK_NO_OP_NAMES
+CXXFLAGS := -pipe $(CXX_WARNING_FLAGS) $(CXXOPTFLAGS) $(INCS) $(MACROS)
 LDFLAGS  := -pipe $(LDOPTFLAGS)
 TARGET   := brainfuck
 MAIN_OBJ := main.o
@@ -44,13 +52,18 @@ endif
 
 
 .PHONY: all
-all: $(TARGET)
+all: $(XBYAK_DIR)/xbyak/xbyak.h $(TARGET)
 
 $(TARGET): $(MAIN_OBJ) $(OBJ)
 
 $(MAIN_OBJ): $(MAIN_SRC) $(HEADER)
 
 $(OBJ): $(SRC) $(HEADER)
+
+$(XBYAK_DIR)/xbyak/xbyak.h:
+	@if [ ! -d $(dir $@) ]; then \
+		$(GIT) clone $(XBYAK_REPOSITORY); \
+	fi
 
 
 .PHONY: clean

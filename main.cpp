@@ -22,7 +22,11 @@ main(int argc, char *argv[])
     Brainfuck bf(DEFAULT_MEMORY_SIZE);
     bf.load(argv[1]);
     bf.trim();
+#ifdef __CYGWIN__
     bf.compile();
+#else
+    bf.compile(Brainfuck::XBYAK_JIT_COMPILE);
+#endif
     bf.execute();
   } catch (const char *errmsg) {
     std::cerr << errmsg << std::endl;
