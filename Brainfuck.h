@@ -9,7 +9,7 @@
 #    define  XBYAK_NO_OP_NAMES
 #  endif
 #  include <xbyak/xbyak.h>
-#endif
+#endif  // USE_XBYAK
 
 #include "CodeGenerator/CodeGenerator.h"
 
@@ -33,8 +33,17 @@ public:
     LANG_RUBY
   } LANG;
 
+#ifdef _MSC_VER
+  typedef enum {
+    WIN_BIN_X86
+  } WinBinType;
+#endif  // _MSC_VER
+
   Brainfuck(std::size_t memorySize=65536) :
     memorySize(memorySize), sourceBuffer(NULL), compileType(NO_COMPILE)
+#ifdef _MSC_VER
+    , exeBin(NULL), exeBinSize(0)
+#endif  // _MSC_VER
 #ifdef USE_XBYAK
     , generator(GENERATOR_SIZE), xbyakRtStackSize(XBYAK_RT_STACK_SIZE), xbyakRtStack(NULL)
 #endif  // USE_XBYAK
@@ -46,8 +55,13 @@ public:
   void compile(CompileType compileType=NORMAL_COMPILE);
   void execute(void);
   void translate(LANG lang=LANG_C);
+#ifdef _MSC_VER
+  void Brainfuck::generateWinBinary(WinBinType wbt=WIN_BIN_X86);
+  inline const unsigned char *getWinBinary(void) const;
+  inline std::size_t getWinBinarySize(void) const;
+#endif  // _MSC_VER
 #ifdef USE_XBYAK
-  void xbyakDump(void);
+  void xbyakDump(void) const;
 #endif  // USE_XBYAK
 
 private:
@@ -67,6 +81,10 @@ private:
   char *sourceBuffer;
   std::vector<Command> commands;
   CompileType compileType;
+#ifdef _MSC_VER
+  unsigned char *exeBin;
+  std::size_t exeBinSize;
+#endif  // _MSC_VER
 #ifdef USE_XBYAK
   static const unsigned int GENERATOR_SIZE = 100000;
   static const unsigned int XBYAK_RT_STACK_SIZE = 128 * 1024;
@@ -76,14 +94,41 @@ private:
 #endif  // USE_XBYAK
 
   void normalCompile(void);
-  void interpretExecute(void);
-  void compileExecute(void);
+  void interpretExecute(void) const;
+  void compileExecute(void) const;
   void generateCode(CodeGenerator &tmpl);
+#ifdef _MSC_VER
+  void generateX86WinBinary(void);
+#endif  // _MSC_VER
 #ifdef USE_XBYAK
   void xbyakJitCompile(void);
   void xbyakJitExecute(void);
 #endif  // USE_XBYAK
 };
+
+
+#ifdef _MSC_VER
+/*!
+ * @brief Get executable Windows binary
+ * @return Pointer to executable Windows binary
+ */
+inline const unsigned char *
+Brainfuck::getWinBinary(void) const
+{
+  return exeBin;
+}
+
+
+/*!
+ * @brief Get size of executable Windows binary
+ * @return Size of executable Windows binary
+ */
+inline std::size_t
+Brainfuck::getWinBinarySize(void) const
+{
+  return exeBinSize;
+}
+#endif  // _MSC_VER
 
 
 #endif  // BRAINFUCK_H

@@ -13,6 +13,24 @@
 #endif  // USE_XBYAK
 #include "Brainfuck.h"
 #include "CodeGenerator/_AllGenerator.h"
+#ifdef _MSC_VER
+#  include <cstdio>
+#  ifdef NOMINMAX
+#    define NOMINMAX
+#    define BRAINFUCK_NOMONMAX_IS_NOT_DEFINED
+#  endif
+#  ifdef WIN32_LEAN_AND_MEAN
+#    define WIN32_LEAN_AND_MEAN
+#    define BRAINFUCK_WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED
+#  endif
+#  include <windows.h>
+#  ifdef BRAINFUCK_NOMONMAX_IS_NOT_DEFINED
+#    undef NOMINMAX
+#  endif
+#  ifdef BRAINFUCK_WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED
+#    undef WIN32_LEAN_AND_MEAN
+#  endif
+#endif  // _MSC_VER
 
 
 static const char *
@@ -23,6 +41,16 @@ findLoopStart(const char *srcptr);
 
 static unsigned int
 countChar(const char *srcptr, char ch);
+
+
+#ifdef _MSC_VER
+inline static void
+writePEHeader(unsigned char *bin, std::size_t codeSize);
+
+inline static void
+writeIData(unsigned char *bin);
+#endif  // _MSC_VER
+
 
 #ifdef USE_XBYAK
 typedef enum {
@@ -45,6 +73,9 @@ toStr(int labelNo, Direction dir);
 Brainfuck::~Brainfuck(void)
 {
   delete[] sourceBuffer;
+#ifdef _MSC_VER
+  delete[] exeBin;
+#endif  // _MSC_VER
 #ifdef USE_XBYAK
   delete[] xbyakRtStack;
 #endif  // USE_XBYAK
@@ -148,7 +179,7 @@ Brainfuck::execute(void)
  * @brief Dump jit-compiled binaries in C-source code
  */
 void
-Brainfuck::xbyakDump(void)
+Brainfuck::xbyakDump(void) const
 {
   const Xbyak::uint8 *code = generator.getCode();
   std::size_t size = generator.getSize();
@@ -157,7 +188,7 @@ Brainfuck::xbyakDump(void)
 #ifdef __linux__
             << "#include <unistd.h>\n"
             << "#include <sys/mman.h>\n"
-#endif
+#endif  // __linux__
             << "\n"
             << "static int stack[128 * 1024];\n"
             << "static const unsigned char code[] = {\n";
@@ -177,7 +208,7 @@ Brainfuck::xbyakDump(void)
 #ifdef __linux__
             << "  long pageSize = sysconf(_SC_PAGESIZE) - 1;\n"
             << "  mprotect((void *) code, (sizeof(code) + pageSize) & ~pageSize, PROT_READ | PROT_EXEC);\n"
-#endif
+#endif  // __linux__
             << "  ((void (*)(void *, void *, int *)) code)((void *) putchar, (void *) getchar, stack);\n"
             << "  return EXIT_SUCCESS;\n"
             << "}"
@@ -186,6 +217,10 @@ Brainfuck::xbyakDump(void)
 #endif  // USE_XBYAK
 
 
+/*!
+ * @brief Translate brainfuck to otehr languages
+ * @param [in] lang  Constant of language
+ */
 void
 Brainfuck::translate(LANG lang)
 {
@@ -234,6 +269,23 @@ Brainfuck::translate(LANG lang)
       break;
   }
 }
+
+
+#ifdef _MSC_VER
+/*!
+ * @brief Generate executable Windows binary
+ * @param [in] wbt  Binary type
+ */
+void
+Brainfuck::generateWinBinary(WinBinType wbt)
+{
+  switch (wbt) {
+    case WIN_BIN_X86:
+      generateX86WinBinary();
+      break;
+  }
+}
+#endif  // _MSC_VER
 
 
 
@@ -300,7 +352,7 @@ Brainfuck::normalCompile(void)
  * @brief Execute brainfuck without compile.
  */
 void
-Brainfuck::interpretExecute(void)
+Brainfuck::interpretExecute(void) const
 {
   unsigned char *memory = new unsigned char[memorySize];
   std::memset(memory, 0, memorySize);
@@ -335,7 +387,7 @@ Brainfuck::interpretExecute(void)
  * @brief Execute compiled brainfuck source code
  */
 void
-Brainfuck::compileExecute(void)
+Brainfuck::compileExecute(void) const
 {
   unsigned char *memory = new unsigned char[memorySize];
   std::memset(memory, 0, memorySize);
@@ -393,9 +445,9 @@ Brainfuck::xbyakJitCompile(void)
   generator.push(generator.edi);
 
   const int P_ = 4 * 3;
-  generator.mov(pPutchar, ptr[esp + P_ + 4]);  // putchar
-  generator.mov(pGetchar, ptr[esp + P_ + 8]);  // getchar
-  generator.mov(stack, ptr[esp + P_ + 12]);  // stack
+  generator.mov(pPutchar, generator.ptr[generator.esp + P_ + 4]);  // putchar
+  generator.mov(pGetchar, generator.ptr[generator.esp + P_ + 8]);  // getchar
+  generator.mov(stack, generator.ptr[generator.esp + P_ + 12]);  // stack
 #elif defined(XBYAK64_WIN)
   const Xbyak::Reg64 &pPutchar(generator.rsi);
   const Xbyak::Reg64 &pGetchar(generator.rdi);
@@ -521,6 +573,10 @@ Brainfuck::xbyakJitExecute(void)
 #endif  // USE_XBYAK
 
 
+/*!
+ * @brief Generate code of other programming language
+ * @param [in] cg  Code generator of target language
+ */
 void
 Brainfuck::generateCode(CodeGenerator &cg)
 {
@@ -558,6 +614,108 @@ Brainfuck::generateCode(CodeGenerator &cg)
   }
   cg.printFooter();
 }
+
+
+#ifdef _MSC_VER
+/*!
+ * @brief Generate X86 Executable Windows binary
+ */
+void
+Brainfuck::generateX86WinBinary(void)
+{
+  static const unsigned int HEADER_OFFSET = 0x400;
+  static const unsigned int EXE_SIZE = 16 * 1024 + HEADER_OFFSET;
+  const int ADDR_PUTCHAR = 0x00405044;
+  const int ADDR_GETCHAR = ADDR_PUTCHAR + 4;
+  const int ADDR_BUF = 0x00406000;
+  std::stack<int> loopStack;
+
+  delete[] exeBin;
+  exeBin = new unsigned char[EXE_SIZE];
+  std::memset(exeBin, 0, EXE_SIZE);
+
+  if (commands.size() == 0 && compileType != NO_COMPILE) {
+    compile();
+  }
+  exeBin[HEADER_OFFSET] = 0x31; exeBin[HEADER_OFFSET + 1] = 0xc9;  // xor ecx, ecx
+  exeBin[HEADER_OFFSET + 2] = 0x57;  // push edi
+  exeBin[HEADER_OFFSET + 3] = 0xbf; *reinterpret_cast<int *>(&exeBin[HEADER_OFFSET + 4]) = ADDR_BUF;  // mov edi, addr_buf
+
+  int idx = HEADER_OFFSET + 8;
+  for (std::vector<Command>::size_type pc = 0, size = commands.size(); pc < size; pc++) {
+    switch (commands[pc].type) {
+      case PTR_ADD:
+        for (unsigned int i = 0; i < commands[pc].value; i++) {
+          exeBin[idx] = 0x66; exeBin[idx + 1] = 0x41;  // inc cx
+          idx += 2;
+        }
+        break;
+      case PTR_SUB:
+        for (unsigned int i = 0; i < commands[pc].value; i++) {
+          exeBin[idx] = 0x66; exeBin[idx + 1] = 0x49;  // dec cx
+          idx += 2;
+        }
+        break;
+      case ADD:
+        for (unsigned int i = 0; i < commands[pc].value; i++) {
+          exeBin[idx] = 0xfe; exeBin[idx + 1] = 0x04; exeBin[idx + 2] = 0x0f;  // inc byte [edi+ecx]
+          idx += 3;
+        }
+        break;
+      case SUB:
+        for (unsigned int i = 0; i < commands[pc].value; i++) {
+          exeBin[idx] = 0xfe; exeBin[idx + 1] = 0x0c; exeBin[idx + 2] = 0x0f;  // dec byte [edi+ecx]
+          idx += 3;
+        }
+        break;
+      case PUTCHAR:
+        exeBin[idx] = 0x51;  // push ecx
+        *reinterpret_cast<int *>(&exeBin[idx + 1]) = 0x0f04b60f;  // movzx eax,byte [edi+ecx]
+        exeBin[idx + 5] = 0x50;  // push eax
+        exeBin[idx + 6] = 0xa1; *reinterpret_cast<int *>(&exeBin[idx + 7]) = ADDR_PUTCHAR;  // mov eax, [addr_putchar]
+        exeBin[idx + 11] = 0xff; exeBin[idx + 12] = 0xd0;  // call eax
+        exeBin[idx + 13] = 0x58;  // pop eax
+        exeBin[idx + 14] = 0x59;  // pop ecx
+        idx += 15;
+        break;
+      case GETCHAR:
+        exeBin[idx] = 0x51;  // push ecx
+        exeBin[idx + 1] = 0xa1; *reinterpret_cast<int *>(&exeBin[idx + 2]) = ADDR_GETCHAR;  // mov eax, [addr_getchar]
+        exeBin[idx + 6] = 0xff; exeBin[idx + 7] = 0xd0;  // call eax
+        exeBin[idx + 8] = 0x59;  // pop ecx
+        exeBin[idx + 9] = 0x88; exeBin[idx + 10] = 0x04; exeBin[idx + 11] = 0x0f;  // mov [edi+ecx],al
+        idx += 12;
+        break;
+      case LOOP_START:
+        loopStack.push(idx);
+        *reinterpret_cast<int *>(&exeBin[idx]) = 0x000f3c80;  // cmp byte [edi+ecx], 0
+        // jz Jump to just behind the corresponding ] (define address later)
+        exeBin[idx + 4] = 0x0f; exeBin[idx + 5] = 0x84;
+        idx += 10;
+        break;
+      case LOOP_END:
+        {
+          int idxLoop = loopStack.top();
+          loopStack.pop();
+          exeBin[idx] = 0xe9; *reinterpret_cast<int *>(&exeBin[idx + 1]) = idxLoop - (idx + 5);  // jmp idxLoop
+          idx += 5;
+          *reinterpret_cast<int *>(&exeBin[idxLoop + 6]) = idx - (idxLoop + 10);  // Rewrites the top of the loop
+        }
+        break;
+    }
+    if (idx > sizeof(exeBin) - 32) {
+      throw "Output size has been exceeded\n";
+    }
+  }
+  exeBin[idx] = 0x5f;  // pop edi
+  exeBin[idx + 1] = 0x31; exeBin[idx + 2] = 0xc0;  // xor eax, eax
+  exeBin[idx + 3] = 0xc3;  // ret
+
+  writePEHeader(exeBin, EXE_SIZE - HEADER_OFFSET);
+  writeIData(exeBin);
+  exeBinSize = EXE_SIZE;
+}
+#endif  // _MSC_VER
 
 
 
@@ -634,3 +792,133 @@ toStr(int labelNo, Direction dir)
   return Xbyak::Label::toStr(labelNo) + (dir == B ? 'B' : 'F');
 }
 #endif  // USE_XBYAK
+
+
+#ifdef _MSC_VER
+/*!
+ * @brief Write PE Header to array
+ * @param [out] exeBin    Destination executable binary array
+ * @param [in]  codeSize  Size of code
+ */
+inline static void
+writePEHeader(unsigned char *exeBin, std::size_t codeSize)
+{
+  static const unsigned char STUB[] = {
+    // 00-3b: DOS Header
+    'M', 'Z',   0x50, 0x00, 0x02, 0x00, 0x00, 0x00, 0x04, 0x00, 0x0f, 0x00, 0xff, 0xff, 0x00, 0x00,
+    0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x1a, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    // 3c-3f: Pointer to PE Header (=80)
+    0x80, 0x00, 0x00, 0x00,
+    // 40-7f: DOS Stub
+    0xba, 0x10, 0x00, 0x0e, 0x1f, 0xb4, 0x09, 0xcd, 0x21, 0xb8, 0x01, 0x4c, 0xcd, 0x21, 0x90, 0x90,
+    'T', 'h', 'i', 's', ' ', 'p', 'r', 'o', 'g', 'r', 'a', 'm', ' ', 'c', 'a', 'n',
+    'n', 'o', 't', ' ', 'b', 'e', ' ', 'r', 'u', 'n', ' ', 'i', 'n', ' ', 'D', 'O',
+    'S', ' ', 'm', 'o', 'd', 'e', '.', '\r', '\n', '$', 0, 0, 0, 0, 0, 0,
+    // 80-83: PE Signature
+    'P', 'E', 0, 0
+  };
+  const static IMAGE_FILE_HEADER COFF = {
+    0x014c, 3, 0, 0, 0, sizeof(IMAGE_OPTIONAL_HEADER32), 0x030f
+  };
+  unsigned char *ptr = exeBin;
+  std::memcpy(ptr, STUB, sizeof(STUB));
+  ptr += sizeof(STUB);
+  std::memcpy(ptr, &COFF, sizeof(COFF));
+  ptr += sizeof(COFF);
+
+  IMAGE_OPTIONAL_HEADER32 opt = {
+    0x010b,  // Magic
+    6, 0,  // MajorLinkerVersion, MinorLinkerVersion
+    static_cast<DWORD>(codeSize),  // SizeOfCode
+    0,  // SizeOfInitializedData
+    65536,  // SizeOfUninitializedData
+    0x1000,  // AddressOfEntryPoint
+    0x1000,  // BaseOfCode
+    0x6000,  // BaseOfData
+    0x00400000,  // ImageBase
+    0x1000,  // SectionAlignment
+    0x0200,  // FileAlignment
+    4, 0,  // MajorOperatingSystemVersion, MinorOperatingSystemVersion
+    0, 0,  // MajorImageVersion, MinorImageVersion
+    4, 0,  // MajorSubsystemVersion, MinorSubsystemVersion
+    0,  // Win32VersionValue
+    0x16000,  // SizeOfImage
+    0x200,  // SizeOfHeaders
+    0,  // CheckSum
+    3,  // Subsystem
+    0,  // DllCharacteristics
+    1024 * 1024,  // SizeOfStackReserve
+    8 * 1024,  // SizeOfStackCommit
+    1024 * 1024,  // SizeOfHeapReserve
+    4 * 1024,  // SizeOfHeapCommit
+    0,  // LoaderFlags
+    16  // NumberOfRvaAndSizes
+  };
+  std::memset(opt.DataDirectory, 0, sizeof(opt.DataDirectory));
+  opt.DataDirectory[1].VirtualAddress = 0x5000;  // import table
+  opt.DataDirectory[1].Size = 100;
+  std::memcpy(ptr, &opt, sizeof(opt));
+  ptr += sizeof(opt);
+
+  IMAGE_SECTION_HEADER sects[3];
+  std::memset(sects, 0, sizeof(sects));
+  std::strcpy(reinterpret_cast<char *>(sects[0].Name), ".text");
+  sects[0].Misc.VirtualSize = static_cast<DWORD>(codeSize);
+  sects[0].VirtualAddress = 0x1000;
+  sects[0].SizeOfRawData = static_cast<DWORD>(codeSize);
+  sects[0].PointerToRawData = 0x400;
+  sects[0].Characteristics = 0x60500060;
+
+  std::strcpy(reinterpret_cast<char *>(sects[1].Name), ".idata");
+  sects[1].Misc.VirtualSize = 100;
+  sects[1].VirtualAddress = 0x5000;
+  sects[1].SizeOfRawData = 512;
+  sects[1].PointerToRawData = 0x200;
+  sects[1].Characteristics = 0xc0300040;
+
+  std::strcpy(reinterpret_cast<char *>(sects[2].Name), ".bss");
+  sects[2].Misc.VirtualSize = 65536;
+  sects[2].VirtualAddress = 0x6000;
+  sects[2].Characteristics = 0xc0400080;
+  std::memcpy(ptr, sects, sizeof(sects));
+}
+
+
+/*!
+ * @brief Write IData to array
+ * @param [out] exeBin    Destination executable binary array
+ */
+inline static void
+writeIData(unsigned char *exeBin)
+{
+  static const int IDT[] = {
+    // IDT 1
+    0x5028, 0, 0, 0x5034, 0x5044,
+    // IDT (End)
+    0, 0, 0, 0, 0
+  };
+  static const int ILT_IAT[] = {
+    0x5050, 0x505a, 0
+  };
+  unsigned char *ptr = exeBin + 0x200;
+  short s = 0x0000;
+
+  std::memcpy(ptr, IDT, sizeof(IDT));
+  ptr += sizeof(IDT);
+  std::memcpy(ptr, ILT_IAT, sizeof(ILT_IAT));
+  ptr += sizeof(ILT_IAT);
+  std::memcpy(ptr, "msvcrt.dll\0\0\0\0\0", 16);
+  ptr += 16;
+  std::memcpy(ptr, ILT_IAT, sizeof(ILT_IAT));
+  ptr += sizeof(ILT_IAT);
+  std::memcpy(ptr, &s, sizeof(s));
+  ptr += sizeof(short);
+  std::memcpy(ptr, "putchar", 8);
+  ptr += 8;
+  std::memcpy(ptr, &s, sizeof(s));
+  ptr += sizeof(short);
+  std::memcpy(ptr, "getchar", 8);
+}
+#endif  // _MSC_VER

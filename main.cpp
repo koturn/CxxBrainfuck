@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 
 #include "Brainfuck.h"
@@ -22,12 +23,21 @@ main(int argc, char *argv[])
     Brainfuck bf(DEFAULT_MEMORY_SIZE);
     bf.load(argv[1]);
     bf.trim();
-#ifdef __CYGWIN__
-    bf.compile();
-#else
+#ifdef _MSC_VER
+    bf.compile(Brainfuck::NORMAL_COMPILE);
+    bf.generateWinBinary();
+    std::ofstream fout("output.exe", std::ios::out | std::ios::binary | std::ios::trunc);
+    if (!fout) {
+      throw "Cannot open file";
+    }
+    fout.write(reinterpret_cast<const char *>(bf.getWinBinary()), bf.getWinBinarySize());
+
     bf.compile(Brainfuck::XBYAK_JIT_COMPILE);
-#endif
-    bf.translate(Brainfuck::LANG_CPP);
+    bf.execute();
+#else
+    bf.compile();
+    bf.execute();
+#endif  // _MSC_VER
   } catch (const char *errmsg) {
     std::cerr << errmsg << std::endl;
     return EXIT_FAILURE;
