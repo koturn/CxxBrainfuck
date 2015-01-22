@@ -185,7 +185,25 @@ Brainfuck::xbyakDump(void) const
   std::size_t size = generator.getSize();
   std::cout << "#include <stdio.h>\n"
             << "#include <stdlib.h>\n"
-#ifdef __linux__
+#if defined(_MSC_VER)
+            << "#ifndef NOMINMAX\n"
+            << "#  define NOMINMAX\n"
+            << "#  define NOMINMAX_IS_NOT_DEFINED\n"
+            << "#endif\n"
+            << "#ifdef WIN32_LEAN_AND_MEAN\n"
+            << "#  define WIN32_LEAN_AND_MEAN\n"
+            << "#  define WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED\n"
+            << "#endif\n"
+            << "#include <windows.h>\n"
+            << "#ifdef NOMONMAX_IS_NOT_DEFINED\n"
+            << "#  undef NOMINMAX\n"
+            << "#endif\n"
+            << "#undef NOMONMAX_IS_NOT_DEFINED\n"
+            << "#ifdef LEAN_AND_MEAN_IS_NOT_DEFINED\n"
+            << "#  undef WIN32_LEAN_AND_MEAN\n"
+            << "#endif\n"
+            << "#undef LEAN_AND_MEAN_IS_NOT_DEFINED\n"
+#elif defined(__linux__)
             << "#include <unistd.h>\n"
             << "#include <sys/mman.h>\n"
 #endif  // __linux__
@@ -205,9 +223,12 @@ Brainfuck::xbyakDump(void) const
             << "int\n"
             << "main(void)\n"
             << "{\n"
-#ifdef __linux__
-            << "  long pageSize = sysconf(_SC_PAGESIZE) - 1;\n"
-            << "  mprotect((void *) code, (sizeof(code) + pageSize) & ~pageSize, PROT_READ | PROT_EXEC);\n"
+#if defined(_MSC_VER)
+            << "  DWORD old_protect;\n"
+            << "  VirtualProtect((void *) code, sizeof(code), PAGE_EXECUTE_READWRITE, &old_protect);\n"
+#elif defined(__linux__)
+            << "  long page_size = sysconf(_SC_PAGESIZE) - 1;\n"
+            << "  mprotect((void *) code, (sizeof(code) + page_size) & ~page_size, PROT_READ | PROT_EXEC);\n"
 #endif  // __linux__
             << "  ((void (*)(void *, void *, int *)) code)((void *) putchar, (void *) getchar, stack);\n"
             << "  return EXIT_SUCCESS;\n"
