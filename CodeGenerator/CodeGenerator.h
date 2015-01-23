@@ -24,17 +24,22 @@ protected:
   inline void printIndent(void);
 public:
   CodeGenerator(const char *indent="  ") :
-    indentLevel(1), indent(indent) {};
-  virtual void printHeader(void) {};
-  virtual void printFooter(void) {};
-  virtual void printPtrAdd(unsigned int __UNUSED__(value)) {};
-  virtual void printPtrSub(unsigned int __UNUSED__(value)) {};
-  virtual void printAdd(unsigned int __UNUSED__(value)) {};
-  virtual void printSub(unsigned int __UNUSED__(value)) {};
-  virtual void printPutchar(void) {};
-  virtual void printGetchar(void) {};
-  virtual void printLoopStart(void) {};
-  virtual void printLoopEnd(void) {};
+    indentLevel(1), indent(indent) {}
+  virtual void printHeader(void) {}
+  virtual void printFooter(void) {}
+  virtual void printPtrAdd(unsigned int __UNUSED__(value)) {}
+  virtual void printPtrSub(unsigned int __UNUSED__(value)) {}
+  virtual void printAdd(unsigned int __UNUSED__(value)) {}
+  virtual void printSub(unsigned int __UNUSED__(value)) {}
+  virtual void printPutchar(void) {}
+  virtual void printGetchar(void) {}
+  virtual void printLoopStart(void) {}
+  virtual void printLoopEnd(void) {}
+  virtual void printAssignZero(void) {
+    printLoopStart();
+    printSub(1);
+    printLoopEnd();
+  }
 };
 
 

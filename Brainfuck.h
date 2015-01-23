@@ -69,7 +69,8 @@ private:
     PTR_ADD, PTR_SUB,
     ADD, SUB,
     PUTCHAR, GETCHAR,
-    LOOP_START, LOOP_END
+    LOOP_START, LOOP_END,
+    ASSIGN_ZERO
   } Instruction;
 
   struct Command {

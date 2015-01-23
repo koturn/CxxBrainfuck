@@ -353,8 +353,13 @@ Brainfuck::normalCompile(void)
         cmd.value = 0;
         break;
       case '[':
-        cmd.type = LOOP_START;
-        loopStack.push(static_cast<unsigned int>(commands.size()));
+        if (srcptr[1] == '-' && srcptr[2] == ']') {
+          srcptr += 2;
+          cmd.type = ASSIGN_ZERO;
+        } else {
+          cmd.type = LOOP_START;
+          loopStack.push(static_cast<unsigned int>(commands.size()));
+        }
         break;
       case ']':
         cmd.type = LOOP_END;
@@ -442,6 +447,9 @@ Brainfuck::compileExecute(void) const
         if (*ptr != 0) {
           pc = commands[pc].value;
         }
+        break;
+      case ASSIGN_ZERO:
+        *ptr = 0;
         break;
     }
   }
@@ -543,11 +551,16 @@ Brainfuck::xbyakJitCompile(void)
 #endif  // defined(XBYAK32) || defined(XBYAK64_GCC)
         break;
       case '[':
-        generator.L(toStr(labelNo, B));
-        generator.mov(generator.eax, cur);
-        generator.test(generator.eax, generator.eax);
-        generator.jz(toStr(labelNo, F), Xbyak::CodeGenerator::T_NEAR);
-        keepLabelNo.push(labelNo++);
+        if (srcptr[1] == '-' && srcptr[2] == ']') {
+          srcptr += 2;
+          generator.mov(cur, 0);
+        } else {
+          generator.L(toStr(labelNo, B));
+          generator.mov(generator.eax, cur);
+          generator.test(generator.eax, generator.eax);
+          generator.jz(toStr(labelNo, F), Xbyak::CodeGenerator::T_NEAR);
+          keepLabelNo.push(labelNo++);
+        }
         break;
       case ']':
         {
@@ -630,6 +643,9 @@ Brainfuck::generateCode(CodeGenerator &cg)
         break;
       case LOOP_END:
         cg.printLoopEnd();
+        break;
+      case ASSIGN_ZERO:
+        cg.printAssignZero();
         break;
     }
   }
@@ -715,6 +731,25 @@ Brainfuck::generateX86WinBinary(void)
         idx += 10;
         break;
       case LOOP_END:
+        {
+          int idxLoop = loopStack.top();
+          loopStack.pop();
+          exeBin[idx] = 0xe9; *reinterpret_cast<int *>(&exeBin[idx + 1]) = idxLoop - (idx + 5);  // jmp idxLoop
+          idx += 5;
+          *reinterpret_cast<int *>(&exeBin[idxLoop + 6]) = idx - (idxLoop + 10);  // Rewrites the top of the loop
+        }
+        break;
+      case ASSIGN_ZERO:
+        // LOOP_START
+        pc += 2;
+        loopStack.push(idx);
+        *reinterpret_cast<int *>(&exeBin[idx]) = 0x000f3c80;  // cmp byte [edi+ecx], 0
+        exeBin[idx + 4] = 0x0f; exeBin[idx + 5] = 0x84;
+        idx += 10;
+        // SUB
+        exeBin[idx] = 0xfe; exeBin[idx + 1] = 0x0c; exeBin[idx + 2] = 0x0f;  // dec byte [edi+ecx]
+        idx += 3;
+        // LOOP_END
         {
           int idxLoop = loopStack.top();
           loopStack.pop();
