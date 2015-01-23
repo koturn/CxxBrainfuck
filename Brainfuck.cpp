@@ -185,7 +185,7 @@ Brainfuck::xbyakDump(void) const
   std::size_t size = generator.getSize();
   std::cout << "#include <stdio.h>\n"
             << "#include <stdlib.h>\n"
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || (defined(__CYGWIN__) && defined(__x86_64__))
             << "#ifndef NOMINMAX\n"
             << "#  define NOMINMAX\n"
             << "#  define NOMINMAX_IS_NOT_DEFINED\n"
@@ -223,7 +223,7 @@ Brainfuck::xbyakDump(void) const
             << "int\n"
             << "main(void)\n"
             << "{\n"
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || (defined(__CYGWIN__) && defined(__x86_64__))
             << "  DWORD old_protect;\n"
             << "  VirtualProtect((void *) code, sizeof(code), PAGE_EXECUTE_READWRITE, &old_protect);\n"
 #elif defined(__linux__)
@@ -469,7 +469,7 @@ Brainfuck::xbyakJitCompile(void)
   generator.mov(pPutchar, generator.ptr[generator.esp + P_ + 4]);  // putchar
   generator.mov(pGetchar, generator.ptr[generator.esp + P_ + 8]);  // getchar
   generator.mov(stack, generator.ptr[generator.esp + P_ + 12]);  // stack
-#elif defined(XBYAK64_WIN)
+#elif defined(XBYAK64_WIN) || (defined(__CYGWIN__) && defined(__x86_64__))
   const Xbyak::Reg64 &pPutchar(generator.rsi);
   const Xbyak::Reg64 &pGetchar(generator.rdi);
   const Xbyak::Reg64 &stack(generator.rbp);  // stack
@@ -521,7 +521,7 @@ Brainfuck::xbyakJitCompile(void)
         generator.push(cur);
         generator.call(pPutchar);
         generator.pop(generator.eax);
-#elif defined(XBYAK64_WIN)
+#elif defined(XBYAK64_WIN) || (defined(__CYGWIN__) && defined(__x86_64__))
         generator.mov(generator.rcx, cur);
         generator.sub(generator.rsp, 32);
         generator.call(pPutchar);
@@ -535,7 +535,7 @@ Brainfuck::xbyakJitCompile(void)
 #if defined(XBYAK32) || defined(XBYAK64_GCC)
         generator.call(pGetchar);
         generator.mov(cur, generator.eax);
-#elif defined(XBYAK64_WIN)
+#elif defined(XBYAK64_WIN) || (defined(__CYGWIN__) && defined(__x86_64__))
         generator.sub(generator.rsp, 32);
         generator.call(pGetchar);
         generator.add(generator.rsp, 32);
@@ -565,7 +565,7 @@ Brainfuck::xbyakJitCompile(void)
   generator.pop(generator.edi);
   generator.pop(generator.esi);
   generator.pop(generator.ebp);
-#elif defined(XBYAK64_WIN)
+#elif defined(XBYAK64_WIN) || (defined(__CYGWIN__) && defined(__x86_64__))
   generator.pop(generator.rbp);
   generator.pop(generator.rdi);
   generator.pop(generator.rsi);
