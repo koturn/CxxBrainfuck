@@ -97,7 +97,9 @@ private:
   void normalCompile(void);
   void interpretExecute(void) const;
   void compileExecute(void) const;
-  void generateCode(CodeGenerator &tmpl);
+
+  template<class TCodeGenerator>
+    void generateCode(TCodeGenerator &cg);
 #ifdef _MSC_VER
   void generateX86WinBinary(void);
 #endif  // _MSC_VER

@@ -8,7 +8,7 @@
 class GeneratorPython : public CodeGenerator {
 public:
   GeneratorPython(const char *indent="    ") :
-    CodeGenerator(indent) {};
+    CodeGenerator(indent) {}
   inline void printHeader(void);
   inline void printFooter(void);
   inline void printPtrAdd(unsigned int value);
@@ -19,6 +19,7 @@ public:
   inline void printGetchar(void);
   inline void printLoopStart(void);
   inline void printLoopEnd(void);
+  inline void printAssignZero(void);
 };
 
 
@@ -109,6 +110,14 @@ inline void
 GeneratorPython::printLoopEnd(void)
 {
   indentLevel--;
+}
+
+
+inline void
+GeneratorPython::printAssignZero(void)
+{
+  printIndent();
+  std::cout << "memory[idx] = 0\n";
 }
 
 

@@ -24,7 +24,7 @@ main(int argc, char *argv[])
     bf.load(argv[1]);
     bf.trim();
     bf.compile(Brainfuck::XBYAK_JIT_COMPILE);
-    bf.execute();
+    bf.translate(Brainfuck::LANG_LUA);
   } catch (const char *errmsg) {
     std::cerr << errmsg << std::endl;
     return EXIT_FAILURE;

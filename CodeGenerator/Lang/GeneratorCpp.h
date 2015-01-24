@@ -8,7 +8,7 @@
 class GeneratorCpp : public CodeGenerator {
 public:
   GeneratorCpp(const char *indent="  ") :
-    CodeGenerator(indent) {};
+    CodeGenerator(indent) {}
   inline void printHeader(void);
   inline void printFooter(void);
   inline void printPtrAdd(unsigned int value);
@@ -19,6 +19,7 @@ public:
   inline void printGetchar(void);
   inline void printLoopStart(void);
   inline void printLoopEnd(void);
+  inline void printAssignZero(void);
 };
 
 
@@ -140,6 +141,14 @@ GeneratorCpp::printLoopEnd(void)
   indentLevel--;
   printIndent();
   std::cout << "}\n";
+}
+
+
+inline void
+GeneratorCpp::printAssignZero(void)
+{
+  printIndent();
+  std::cout << "*ptr = 0;\n";
 }
 
 

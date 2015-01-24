@@ -611,8 +611,9 @@ Brainfuck::xbyakJitExecute(void)
  * @brief Generate code of other programming language
  * @param [in] cg  Code generator of target language
  */
+template<class TCodeGenerator>
 void
-Brainfuck::generateCode(CodeGenerator &cg)
+Brainfuck::generateCode(TCodeGenerator &cg)
 {
   if (commands.size() == 0 && compileType != NO_COMPILE) {
     compile();
