@@ -179,10 +179,15 @@ Brainfuck::execute(void)
  * @brief Dump jit-compiled binaries in C-source code
  */
 void
-Brainfuck::xbyakDump(void) const
+Brainfuck::xbyakDump(void)
 {
-  const Xbyak::uint8 *code = generator.getCode();
   std::size_t size = generator.getSize();
+  if (size == 0) {
+    xbyakJitCompile();
+    size = generator.getSize();
+  }
+  const Xbyak::uint8 *code = generator.getCode();
+
   std::cout << "#include <stdio.h>\n"
             << "#include <stdlib.h>\n"
 #if defined(_MSC_VER) || (defined(__CYGWIN__) && defined(__x86_64__))

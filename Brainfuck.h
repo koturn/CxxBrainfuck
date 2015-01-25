@@ -61,7 +61,7 @@ public:
   inline std::size_t getWinBinarySize(void) const;
 #endif  // _MSC_VER
 #ifdef USE_XBYAK
-  void xbyakDump(void) const;
+  void xbyakDump(void);
 #endif  // USE_XBYAK
 
 private:

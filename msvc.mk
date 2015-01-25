@@ -3,6 +3,14 @@ XBYAK_DIR        = xbyak
 XBYAK_REPOSITORY = https://github.com/herumi/$(XBYAK_DIR)
 XBYAK_INCS       = /I$(XBYAK_DIR)/
 
+GETOPT_DIR        = getopt
+GETOPT_REPOSITORY = https://github.com/koturn/$(GETOPT_DIR).git
+GETOPT_LIBS_DIR   = $(GETOPT_DIR)/lib
+GETOPT_LIB        = getopt$(DBG_SUFFIX).lib
+GETOPT_LDLIBS     = /LIBPATH:$(GETOPT_LIBS_DIR) $(GETOPT_LIB)
+GETOPT_INCS       = /Igetopt/include/
+
+
 !if "$(CRTDLL)" == "true"
 CRTLIB = /MD$(DBG_SUFFIX)
 !else
@@ -30,10 +38,11 @@ CPP      = cl
 RM       = del /F
 MAKE     = $(MAKE) /nologo
 GIT      = git
-INCS     = $(XBYAK_INCS) $(MSVCDBG_INCS)
+INCS     = $(XBYAK_INCS) $(GETOPT_INCS) $(MSVCDBG_INCS)
 MACROS   = /DUSE_XBYAK /DXBYAK_NO_OP_NAMES $(MSVC_MACROS)
 CPPFLAGS = /nologo $(COPTFLAGS) /EHsc /W4 /c $(INCS) $(MACROS)
 LDFLAGS  = /nologo $(LDOPTFLAGS)
+LDLIBS   = /link $(GETOPT_LDLIBS)
 
 TARGET   = brainfuck.exe
 MAIN_OBJ = main.obj
@@ -51,7 +60,7 @@ MAKEFILE = msvc.mk
 	$(CPP) $(CPPFLAGS) $** /Fo$@
 
 
-all: $(XBYAK_DIR)/xbyak/xbyak.h $(MSVCDBG_DIR)/NUL $(TARGET)
+all: $(GETOPT_LIBS_DIR)/$(GETOPT_LIB) $(XBYAK_DIR)/xbyak/xbyak.h $(MSVCDBG_DIR)/NUL $(TARGET)
 
 $(TARGET): $(MAIN_OBJ) $(OBJ)
 
@@ -63,6 +72,11 @@ $(OBJ): $(SRC) $(HEADER)
 $(XBYAK_DIR)/xbyak/xbyak.h:
 	@if not exist $(@D)/NUL \
 		$(GIT) clone $(XBYAK_REPOSITORY)
+
+$(GETOPT_LIBS_DIR)/$(GETOPT_LIB):
+	@if not exist $(@D)/NUL \
+		$(GIT) clone $(GETOPT_REPOSITORY)
+	cd $(GETOPT_DIR)  &  $(MAKE) /f $(MAKEFILE)  &  cd $(MAKEDIR)
 
 $(MSVCDBG_DIR)/NUL:
 	@if not exist $(@D)/NUL \
