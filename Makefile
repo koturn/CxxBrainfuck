@@ -43,6 +43,8 @@ HEADER   := $(OBJ:%.o=%.h)
 
 ifeq ($(OS),Windows_NT)
     TARGET := $(addsuffix .exe, $(TARGET))
+else
+    TARGET := $(addsuffix .out, $(TARGET))
 endif
 
 %.exe:
@@ -64,6 +66,11 @@ $(XBYAK_DIR)/xbyak/xbyak.h:
 	@if [ ! -d $(dir $@) ]; then \
 		$(GIT) clone $(XBYAK_REPOSITORY); \
 	fi
+
+
+.PHONY: test
+test:
+	./$(TARGET) -h
 
 
 .PHONY: clean

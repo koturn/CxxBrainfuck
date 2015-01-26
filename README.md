@@ -1,10 +1,12 @@
-Brainfuck
-=========
+CxxBrainfuck
+============
+
+[![Build Status](https://travis-ci.org/koturn/CxxBrainfuck.png)](https://travis-ci.org/koturn/CxxBrainfuck)
 
 Brainfuck interpreter.
 
 This program provides normal Brainfuck interpreter, Brainfuck interpreter with
-simple compile and Brainfuck interpreter with JIt-compile of Brainfuck.
+simple compile and Brainfuck interpreter with JIT-compile of Brainfuck.
 
 
 ## Usage
@@ -12,7 +14,7 @@ simple compile and Brainfuck interpreter with JIt-compile of Brainfuck.
 ### Run Brainfuck program
 
 ```sh
-$ ./brainfuck [Brainfuck source file]
+$ ./brainfuck.out [Brainfuck source file]
 ```
 
 
