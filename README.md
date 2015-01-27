@@ -3,10 +3,43 @@ CxxBrainfuck
 
 [![Build Status](https://travis-ci.org/koturn/CxxBrainfuck.png)](https://travis-ci.org/koturn/CxxBrainfuck)
 
-Brainfuck interpreter.
+Brainfuck interpreter, translator and compiler.
 
-This program provides normal Brainfuck interpreter, Brainfuck interpreter with
-simple compile and Brainfuck interpreter with JIT-compile of Brainfuck.
+This program provides Brainfuck interpreter, translator and compiler.
+
+Interpreter works in three mode.
+
+- Simple Interpreter
+- Interpreter with simple compile
+- Interpreter with JIT-compile
+
+Simple Interpreter seeks one character.
+In other words, it cannot skip.
+So it works very slow, especially at loop.
+
+Interpreter with simple compile works with decent speed.
+It compile Brainfuck source code before execution as following.
+
+- Combine continuous increment / decrement pointer-increment /
+  pointer-decrement instruction
+- Generate jump table for loop instruction
+- Generate an instruction to assign zero
+
+Interpreter with JIT-compile works very fast.
+Brainfuck JIT-compiler was implemented with [Xbyak](https://github.com/herumi/xbyak).
+
+Translator can translate Brainfuck into following seven languages.
+
+- C
+- C++
+- C#
+- Java
+- Lua
+- Python
+- Ruby
+
+Compiler can compile Brainfuck source code into x86 Windows executable binary.
+(This function works at Windows only).
 
 
 ## Usage
@@ -16,6 +49,31 @@ simple compile and Brainfuck interpreter with JIT-compile of Brainfuck.
 ```sh
 $ ./brainfuck.out [Brainfuck source file]
 ```
+
+### Options
+
+- ```-c TARGET, --compile=TARGET```
+  - Specify output type
+    - ```c```:      Compile to C source code
+    - ```cpp```:    Compile to C++ source code
+    - ```csharp```: Compile to C# source code
+    - ```java```:   Compile to Java source code
+    - ```lua```:    Compile to Lua source code
+    - ```python```: Compile to Python source code
+    - ```ruby```:   Compile to Python source code
+    - ```xbyakc```: Compile to C source code dumped from Xbyak Code generator
+    - ```winx86```: Compile to x86 Windows executable binary
+- ```-h```, ```--help```
+  - Show help and exit this program
+- ```-O OPT_LEVEL```, ```--optimize=OPT_LEVEL```
+  - Specify optimize level
+    - 0: Execute with No compile
+    - 1: Execute with simple compile
+    - 2: Execute with JIT compile
+  - Default value: ```OPT_LEVEL = 1```
+- ```-s MEMORY_SIZE```, ```--size=MEMORY_SIZE```
+  - Specify memory size
+  - Default value: ```MEMORY_SIZE = 65536```
 
 
 ## Build
@@ -56,16 +114,19 @@ Use [msvc.mk](msvc.mk).
 
 ## References
 
-- [http://en.wikipedia.org/wiki/Brainfuck](http://en.wikipedia.org/wiki/Brainfuck)
+- [Brainfuck](http://en.wikipedia.org/wiki/Brainfuck)
+- [7shi/bfexe](https://github.com/7shi/bfexe)
+- [hayamiz/dbtimes-vol01](https://github.com/hayamiz/dbtimes-vol01)
 
 
 ## Dependent libraries
 
-- [Xbyak](https://github.com/herumi/xbyak)
+- [herumi/Xbyak](https://github.com/herumi/xbyak)
 
 #### MSVC only
 
-- [msvcdbg](https://github.com/koturn/msvcdbg)
+- [koturn/getopt](https://github.com/koturn/getopt)
+- [koturn/msvcdbg](https://github.com/koturn/msvcdbg)
 
 
 ## LICENSE
