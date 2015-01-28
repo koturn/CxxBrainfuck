@@ -13,7 +13,7 @@
 #endif  // USE_XBYAK
 #include "Brainfuck.h"
 #include "CodeGenerator/_AllGenerator.h"
-#ifdef _MSC_VER
+#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 #  include <cstdio>
 #  ifdef NOMINMAX
 #    define NOMINMAX
@@ -30,7 +30,7 @@
 #  ifdef BRAINFUCK_WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED
 #    undef WIN32_LEAN_AND_MEAN
 #  endif
-#endif  // _MSC_VER
+#endif  // defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 
 
 static const char *
@@ -43,13 +43,13 @@ static unsigned int
 countChar(const char *srcptr, char ch);
 
 
-#ifdef _MSC_VER
+#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 inline static void
 writePEHeader(unsigned char *bin, std::size_t codeSize);
 
 inline static void
 writeIData(unsigned char *bin);
-#endif  // _MSC_VER
+#endif  // defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 
 
 #ifdef USE_XBYAK
@@ -73,9 +73,9 @@ toStr(int labelNo, Direction dir);
 Brainfuck::~Brainfuck(void)
 {
   delete[] sourceBuffer;
-#ifdef _MSC_VER
+#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
   delete[] exeBin;
-#endif  // _MSC_VER
+#endif  // defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 #ifdef USE_XBYAK
   delete[] xbyakRtStack;
 #endif  // USE_XBYAK
@@ -190,7 +190,7 @@ Brainfuck::xbyakDump(void)
 
   std::cout << "#include <stdio.h>\n"
             << "#include <stdlib.h>\n"
-#if defined(_MSC_VER) || (defined(__CYGWIN__) && defined(__x86_64__))
+#if defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
             << "#ifndef NOMINMAX\n"
             << "#  define NOMINMAX\n"
             << "#  define NOMINMAX_IS_NOT_DEFINED\n"
@@ -211,7 +211,7 @@ Brainfuck::xbyakDump(void)
 #elif defined(__linux__)
             << "#include <unistd.h>\n"
             << "#include <sys/mman.h>\n"
-#endif  // __linux__
+#endif
             << "\n"
             << "static int stack[128 * 1024];\n"
             << "static const unsigned char code[] = {\n";
@@ -228,13 +228,13 @@ Brainfuck::xbyakDump(void)
             << "int\n"
             << "main(void)\n"
             << "{\n"
-#if defined(_MSC_VER) || (defined(__CYGWIN__) && defined(__x86_64__))
+#if defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
             << "  DWORD old_protect;\n"
             << "  VirtualProtect((void *) code, sizeof(code), PAGE_EXECUTE_READWRITE, &old_protect);\n"
 #elif defined(__linux__)
             << "  long page_size = sysconf(_SC_PAGESIZE) - 1;\n"
             << "  mprotect((void *) code, (sizeof(code) + page_size) & ~page_size, PROT_READ | PROT_EXEC);\n"
-#endif  // __linux__
+#endif
             << "  ((void (*)(void *, void *, int *)) code)((void *) putchar, (void *) getchar, stack);\n"
             << "  return EXIT_SUCCESS;\n"
             << "}"
@@ -297,7 +297,7 @@ Brainfuck::translate(LANG lang)
 }
 
 
-#ifdef _MSC_VER
+#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 /*!
  * @brief Generate executable Windows binary
  * @param [in] wbt  Binary type
@@ -311,7 +311,7 @@ Brainfuck::generateWinBinary(WinBinType wbt)
       break;
   }
 }
-#endif  // _MSC_VER
+#endif  // defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 
 
 
@@ -659,7 +659,7 @@ Brainfuck::generateCode(TCodeGenerator &cg)
 }
 
 
-#ifdef _MSC_VER
+#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 /*!
  * @brief Generate X86 Executable Windows binary
  */
@@ -765,7 +765,7 @@ Brainfuck::generateX86WinBinary(void)
         }
         break;
     }
-    if (idx > sizeof(exeBin) - 32) {
+    if (static_cast<std::size_t>(idx) > sizeof(exeBin) - 32) {
       throw "Output size has been exceeded\n";
     }
   }
@@ -777,7 +777,7 @@ Brainfuck::generateX86WinBinary(void)
   writeIData(exeBin);
   exeBinSize = EXE_SIZE;
 }
-#endif  // _MSC_VER
+#endif  // defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 
 
 
@@ -856,7 +856,7 @@ toStr(int labelNo, Direction dir)
 #endif  // USE_XBYAK
 
 
-#ifdef _MSC_VER
+#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 /*!
  * @brief Write PE Header to array
  * @param [out] exeBin    Destination executable binary array
@@ -983,4 +983,4 @@ writeIData(unsigned char *exeBin)
   ptr += sizeof(short);
   std::memcpy(ptr, "getchar", 8);
 }
-#endif  // _MSC_VER
+#endif  // defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)

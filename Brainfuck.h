@@ -33,17 +33,17 @@ public:
     LANG_RUBY
   } LANG;
 
-#ifdef _MSC_VER
+#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
   typedef enum {
     WIN_BIN_X86
   } WinBinType;
-#endif  // _MSC_VER
+#endif  // defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 
   Brainfuck(std::size_t memorySize=65536) :
     memorySize(memorySize), sourceBuffer(NULL), compileType(NO_COMPILE)
-#ifdef _MSC_VER
+#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
     , exeBin(NULL), exeBinSize(0)
-#endif  // _MSC_VER
+#endif  // defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 #ifdef USE_XBYAK
     , generator(GENERATOR_SIZE), xbyakRtStackSize(XBYAK_RT_STACK_SIZE), xbyakRtStack(NULL)
 #endif  // USE_XBYAK
@@ -55,11 +55,11 @@ public:
   void compile(CompileType compileType=NORMAL_COMPILE);
   void execute(void);
   void translate(LANG lang=LANG_C);
-#ifdef _MSC_VER
-  void Brainfuck::generateWinBinary(WinBinType wbt=WIN_BIN_X86);
+#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
+  void generateWinBinary(WinBinType wbt=WIN_BIN_X86);
   inline const unsigned char *getWinBinary(void) const;
   inline std::size_t getWinBinarySize(void) const;
-#endif  // _MSC_VER
+#endif  // defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 #ifdef USE_XBYAK
   void xbyakDump(void);
 #endif  // USE_XBYAK
@@ -82,10 +82,10 @@ private:
   char *sourceBuffer;
   std::vector<Command> commands;
   CompileType compileType;
-#ifdef _MSC_VER
+#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
   unsigned char *exeBin;
   std::size_t exeBinSize;
-#endif  // _MSC_VER
+#endif  // defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 #ifdef USE_XBYAK
   static const unsigned int GENERATOR_SIZE = 100000;
   static const unsigned int XBYAK_RT_STACK_SIZE = 128 * 1024;
@@ -100,9 +100,9 @@ private:
 
   template<class TCodeGenerator>
     void generateCode(TCodeGenerator &cg);
-#ifdef _MSC_VER
+#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
   void generateX86WinBinary(void);
-#endif  // _MSC_VER
+#endif  // defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 #ifdef USE_XBYAK
   void xbyakJitCompile(void);
   void xbyakJitExecute(void);
@@ -110,7 +110,7 @@ private:
 };
 
 
-#ifdef _MSC_VER
+#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 /*!
  * @brief Get executable Windows binary
  * @return Pointer to executable Windows binary
@@ -131,7 +131,7 @@ Brainfuck::getWinBinarySize(void) const
 {
   return exeBinSize;
 }
-#endif  // _MSC_VER
+#endif  // defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 
 
 #endif  // BRAINFUCK_H

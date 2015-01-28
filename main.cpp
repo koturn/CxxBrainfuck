@@ -92,7 +92,7 @@ main(int argc, char *argv[])
         bf.xbyakDump();
       }
 #endif
-#ifdef _MSC_VER
+#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
       if (!std::strcmp(target, "winx86")) {
         bf.generateWinBinary(Brainfuck::WIN_BIN_X86);
         std::ofstream fout("output.exe", std::ios::out | std::ios::binary | std::ios::trunc);
@@ -191,7 +191,7 @@ OptionParser::help(void) const
 #ifdef USE_XBYAK
                "      - xbyakc: Compile to C source code dumped from Xbyak Code generator\n"
 #endif
-#ifdef _MSC_VER
+#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
                "      - winx86: Compile to x86 Windows executable binary\n"
 #endif
                "  -h, --help\n"
