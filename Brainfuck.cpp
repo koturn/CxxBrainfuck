@@ -607,7 +607,7 @@ Brainfuck::xbyakJitExecute(void)
   xbyakRtStack = new int[xbyakRtStackSize];
   std::memset(xbyakRtStack, 0, xbyakRtStackSize);
   generator.getCode<void (*)(void *, void *, int *)>()
-    (Xbyak::CastTo<void *>(putchar), Xbyak::CastTo<void *>(getchar), xbyakRtStack);
+    (Xbyak::CastTo<void *>(std::putchar), Xbyak::CastTo<void *>(std::getchar), xbyakRtStack);
 }
 #endif  // USE_XBYAK
 
