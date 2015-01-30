@@ -510,22 +510,38 @@ Brainfuck::xbyakJitCompile(void)
   for (const char *srcptr = sourceBuffer; *srcptr != '\0'; srcptr++) {
     switch (*srcptr) {
       case '+':
+        {
+          int cnt = countChar(srcptr, *srcptr);
+          if (cnt == 1) {
+            generator.inc(cur);
+          } else {
+            generator.add(cur, cnt);
+          }
+          srcptr += cnt - 1;
+        }
+        break;
       case '-':
         {
           int cnt = countChar(srcptr, *srcptr);
           if (cnt == 1) {
-            *srcptr == '+' ? generator.inc(cur) : generator.dec(cur);
+            generator.dec(cur);
           } else {
-            generator.add(cur, (*srcptr == '+' ? cnt : -cnt));
+            generator.sub(cur, cnt);
           }
           srcptr += cnt - 1;
         }
         break;
       case '>':
+        {
+          int cnt = countChar(srcptr, *srcptr);
+          generator.add(stack, 4 * cnt);
+          srcptr += cnt - 1;
+        }
+        break;
       case '<':
         {
           int cnt = countChar(srcptr, *srcptr);
-          generator.add(stack, 4 * (*srcptr == '>' ? cnt : -cnt));
+          generator.sub(stack, 4 * cnt);
           srcptr += cnt - 1;
         }
         break;
