@@ -29,8 +29,8 @@ inline void
 GeneratorLua::printHeader(void)
 {
   std::cout << "#!/usr/bin/env lua\n\n"
-            << "local memory = {0}\n"
-            << "local idx = 1\n\n";
+               "local memory = {0}\n"
+               "local idx = 1\n\n";
   indentLevel = 0;
 }
 
@@ -49,10 +49,8 @@ GeneratorLua::printPtrAdd(unsigned int value)
   std::cout << "idx = idx + " << value << "\n";
   printIndent();
   std::cout << "if memory[idx] == nil then\n";
-  indentLevel++;
   printIndent();
-  std::cout << "memory[idx] = 0\n";
-  indentLevel--;
+  std::cout << indent << "memory[idx] = 0\n";
   printIndent();
   std::cout << "end\n";
 }
@@ -65,10 +63,8 @@ GeneratorLua::printPtrSub(unsigned int value)
   std::cout << "idx = idx - " << value << "\n";
   printIndent();
   std::cout << "if memory[idx] == nil then\n";
-  indentLevel++;
   printIndent();
-  std::cout << "memory[idx] = 0\n";
-  indentLevel--;
+  std::cout << indent << "memory[idx] = 0\n";
   printIndent();
   std::cout << "end\n";
 }

@@ -189,33 +189,33 @@ Brainfuck::xbyakDump(void)
   const Xbyak::uint8 *code = generator.getCode();
 
   std::cout << "#include <stdio.h>\n"
-            << "#include <stdlib.h>\n"
+               "#include <stdlib.h>\n"
 #if defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
-            << "#ifndef NOMINMAX\n"
-            << "#  define NOMINMAX\n"
-            << "#  define NOMINMAX_IS_NOT_DEFINED\n"
-            << "#endif\n"
-            << "#ifdef WIN32_LEAN_AND_MEAN\n"
-            << "#  define WIN32_LEAN_AND_MEAN\n"
-            << "#  define WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED\n"
-            << "#endif\n"
-            << "#include <windows.h>\n"
-            << "#ifdef NOMONMAX_IS_NOT_DEFINED\n"
-            << "#  undef NOMINMAX\n"
-            << "#endif\n"
-            << "#undef NOMONMAX_IS_NOT_DEFINED\n"
-            << "#ifdef LEAN_AND_MEAN_IS_NOT_DEFINED\n"
-            << "#  undef WIN32_LEAN_AND_MEAN\n"
-            << "#endif\n"
-            << "#undef LEAN_AND_MEAN_IS_NOT_DEFINED\n"
+               "#ifndef NOMINMAX\n"
+               "#  define NOMINMAX\n"
+               "#  define NOMINMAX_IS_NOT_DEFINED\n"
+               "#endif\n"
+               "#ifdef WIN32_LEAN_AND_MEAN\n"
+               "#  define WIN32_LEAN_AND_MEAN\n"
+               "#  define WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED\n"
+               "#endif\n"
+               "#include <windows.h>\n"
+               "#ifdef NOMONMAX_IS_NOT_DEFINED\n"
+               "#  undef NOMINMAX\n"
+               "#endif\n"
+               "#undef NOMONMAX_IS_NOT_DEFINED\n"
+               "#ifdef LEAN_AND_MEAN_IS_NOT_DEFINED\n"
+               "#  undef WIN32_LEAN_AND_MEAN\n"
+               "#endif\n"
+               "#undef LEAN_AND_MEAN_IS_NOT_DEFINED\n"
 #elif defined(__linux__)
-            << "#include <unistd.h>\n"
-            << "#include <sys/mman.h>\n"
+               "#include <unistd.h>\n"
+               "#include <sys/mman.h>\n"
 #endif
-            << "\n"
-            << "static int stack[128 * 1024];\n"
-            << "static const unsigned char code[] = {\n";
-  std::cout << std::hex << " ";
+               "\n"
+               "static int stack[128 * 1024];\n"
+               "static const unsigned char code[] = {\n"
+            << std::hex << " ";
   for (std::size_t i = 0; i < size; i++) {
     std::cout << " 0x" << std::setfill('0') << std::setw(2)
               << static_cast<unsigned int>(code[i]) << ",";
@@ -225,19 +225,19 @@ Brainfuck::xbyakDump(void)
   }
   std::cout << std::dec
             << "\n};\n\n\n"
-            << "int\n"
-            << "main(void)\n"
-            << "{\n"
+               "int\n"
+               "main(void)\n"
+               "{\n"
 #if defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
-            << "  DWORD old_protect;\n"
-            << "  VirtualProtect((void *) code, sizeof(code), PAGE_EXECUTE_READWRITE, &old_protect);\n"
+               "  DWORD old_protect;\n"
+               "  VirtualProtect((void *) code, sizeof(code), PAGE_EXECUTE_READWRITE, &old_protect);\n"
 #elif defined(__linux__)
-            << "  long page_size = sysconf(_SC_PAGESIZE) - 1;\n"
-            << "  mprotect((void *) code, (sizeof(code) + page_size) & ~page_size, PROT_READ | PROT_EXEC);\n"
+               "  long page_size = sysconf(_SC_PAGESIZE) - 1;\n"
+               "  mprotect((void *) code, (sizeof(code) + page_size) & ~page_size, PROT_READ | PROT_EXEC);\n"
 #endif
-            << "  ((void (*)(void *, void *, int *)) code)((void *) putchar, (void *) getchar, stack);\n"
-            << "  return EXIT_SUCCESS;\n"
-            << "}"
+               "  ((void (*)(void *, void *, int *)) code)((void *) putchar, (void *) getchar, stack);\n"
+               "  return EXIT_SUCCESS;\n"
+               "}"
             << std::endl;
 }
 #endif  // USE_XBYAK

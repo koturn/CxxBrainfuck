@@ -29,15 +29,13 @@ inline void
 GeneratorC::printHeader(void)
 {
   std::cout << "#include <stdio.h>\n"
-            << "#include <stdlib.h>\n\n"
-            << "#define MEMORY_SIZE 65536\n\n"
-            << "int\n"
-            << "main(void)\n"
-            << "{\n";
-  printIndent();
-  std::cout << "static unsigned char memory[MEMORY_SIZE] = {0};\n";
-  printIndent();
-  std::cout << "unsigned char *ptr = memory;\n\n";
+               "#include <stdlib.h>\n\n"
+               "#define MEMORY_SIZE 65536\n\n"
+               "int\n"
+               "main(void)\n"
+               "{\n"
+            << indent << "static unsigned char memory[MEMORY_SIZE] = {0};\n"
+            << indent << "unsigned char *ptr = memory;\n\n";
 }
 
 
@@ -45,10 +43,9 @@ inline void
 GeneratorC::printFooter(void)
 {
   std::cout << "\n";
-  printIndent();
-  std::cout << "return EXIT_SUCCESS;\n"
-    << "}"
-    << std::endl;
+  std::cout << indent << "return EXIT_SUCCESS;\n"
+               "}"
+            << std::endl;
 }
 
 

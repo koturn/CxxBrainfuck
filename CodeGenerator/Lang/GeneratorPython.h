@@ -29,8 +29,8 @@ inline void
 GeneratorPython::printHeader(void)
 {
   std::cout << "#!/usr/bin/env python\n\n"
-            << "import sys\n\n\n"
-            << "if __name__ == '__main__':\n"
+               "import sys\n\n\n"
+               "if __name__ == '__main__':\n"
             << indent << "memory = [0]\n"
             << indent << "idx = 0\n\n";
 }
@@ -50,10 +50,8 @@ GeneratorPython::printPtrAdd(unsigned int value)
   std::cout << "idx += " << value << "\n";
   printIndent();
   std::cout << "if idx >= len(memory):\n";
-  indentLevel++;
   printIndent();
-  std::cout << "memory += [0] * (idx - len(memory) + 1)\n";
-  indentLevel--;
+  std::cout << indent << "memory += [0] * (idx - len(memory) + 1)\n";
 }
 
 

@@ -41,7 +41,7 @@ inline void
 GeneratorJava::printFooter(void)
 {
   std::cout << indent << "}\n"
-            << "}"
+               "}"
             << std::endl;
 }
 

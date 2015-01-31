@@ -29,7 +29,7 @@ inline void
 GeneratorRuby::printHeader(void)
 {
   std::cout << "#!/usr/bin/env ruby\n\n"
-            << "if __FILE__ == $0\n"
+               "if __FILE__ == $0\n"
             << indent << "memory = [0]\n"
             << indent << "idx = 0\n\n";
 }
@@ -49,10 +49,8 @@ GeneratorRuby::printPtrAdd(unsigned int value)
   std::cout << "idx += " << value << "\n";
   printIndent();
   std::cout << "if idx >= memory.size\n";
-  indentLevel++;
   printIndent();
-  std::cout << "memory += [0] * (idx - memory.size + 1)\n";
-  indentLevel--;
+  std::cout << indent << "memory += [0] * (idx - memory.size + 1)\n";
   printIndent();
   std::cout << "end\n";
 }

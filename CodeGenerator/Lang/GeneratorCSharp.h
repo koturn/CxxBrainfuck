@@ -29,8 +29,8 @@ inline void
 GeneratorCSharp::printHeader(void)
 {
   std::cout << "using System;\n\n"
-            << "public class TranslatedBrainfuck\n"
-            << "{\n"
+               "public class TranslatedBrainfuck\n"
+               "{\n"
             << indent << "public static void Main()\n"
             << indent << "{\n"
             << indent << indent << "const int MEMORY_SIZE = 65536;\n"
@@ -44,7 +44,7 @@ inline void
 GeneratorCSharp::printFooter(void)
 {
   std::cout << indent << "}\n"
-            << "}"
+               "}"
             << std::endl;
 }
 
