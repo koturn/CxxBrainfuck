@@ -214,7 +214,7 @@ Brainfuck::xbyakDump(void)
 #endif
                "\n"
                "static int stack[128 * 1024];\n"
-               "static const unsigned char code[] = {\n"
+               "static unsigned char code[] = {\n"
             << std::hex << " ";
   for (std::size_t i = 0; i < size; i++) {
     std::cout << " 0x" << std::setfill('0') << std::setw(2)
@@ -230,12 +230,12 @@ Brainfuck::xbyakDump(void)
                "{\n"
 #if defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
                "  DWORD old_protect;\n"
-               "  VirtualProtect((void *) code, sizeof(code), PAGE_EXECUTE_READWRITE, &old_protect);\n"
+               "  VirtualProtect((LPVOID) code, sizeof(code), PAGE_EXECUTE_READWRITE, &old_protect);\n"
 #elif defined(__linux__)
                "  long page_size = sysconf(_SC_PAGESIZE) - 1;\n"
                "  mprotect((void *) code, (sizeof(code) + page_size) & ~page_size, PROT_READ | PROT_EXEC);\n"
 #endif
-               "  ((void (*)(void *, void *, int *)) code)((void *) putchar, (void *) getchar, stack);\n"
+               "  ((void (*)(int (*)(int), int (*)(), int *)) (unsigned char *) code)(putchar, getchar, stack);\n"
                "  return EXIT_SUCCESS;\n"
                "}"
             << std::endl;
