@@ -92,7 +92,6 @@ main(int argc, char *argv[])
         bf.xbyakDump();
       }
 #endif
-#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
       if (!std::strcmp(target, "winx86")) {
         bf.generateWinBinary(Brainfuck::WIN_BIN_X86);
         std::ofstream fout("output.exe", std::ios::out | std::ios::binary | std::ios::trunc);
@@ -101,7 +100,6 @@ main(int argc, char *argv[])
         }
         fout.write(reinterpret_cast<const char *>(bf.getWinBinary()), bf.getWinBinarySize());
       }
-#endif
     }
   } catch (const char *errmsg) {
     std::cerr << errmsg << std::endl;
@@ -191,9 +189,7 @@ OptionParser::help(void) const
 #ifdef USE_XBYAK
                "      - xbyakc: Compile to C source code dumped from Xbyak Code generator\n"
 #endif
-#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
                "      - winx86: Compile to x86 Windows executable binary\n"
-#endif
                "  -h, --help\n"
                "    Show help and exit this program\n"
                "  -O OPT_LEVEL, --optimize=OPT_LEVEL\n"

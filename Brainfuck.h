@@ -33,11 +33,9 @@ public:
     LANG_RUBY
   } LANG;
 
-#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
   typedef enum {
     WIN_BIN_X86
   } WinBinType;
-#endif  // defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 
   Brainfuck(std::size_t memorySize=65536) :
     memorySize(memorySize), sourceBuffer(NULL), compileType(NO_COMPILE)
@@ -55,11 +53,9 @@ public:
   void compile(CompileType compileType=NORMAL_COMPILE);
   void execute(void);
   void translate(LANG lang=LANG_C);
-#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
   void generateWinBinary(WinBinType wbt=WIN_BIN_X86);
   inline const unsigned char *getWinBinary(void) const;
   inline std::size_t getWinBinarySize(void) const;
-#endif  // defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 #ifdef USE_XBYAK
   void xbyakDump(void);
 #endif  // USE_XBYAK
@@ -100,9 +96,7 @@ private:
 
   template<class TCodeGenerator>
     void generateCode(TCodeGenerator &cg);
-#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
   void generateX86WinBinary(void);
-#endif  // defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 #ifdef USE_XBYAK
   void xbyakJitCompile(void);
   void xbyakJitExecute(void);

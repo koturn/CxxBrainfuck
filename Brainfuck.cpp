@@ -13,24 +13,7 @@
 #endif  // USE_XBYAK
 #include "Brainfuck.h"
 #include "CodeGenerator/_AllGenerator.h"
-#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
-#  include <cstdio>
-#  ifdef NOMINMAX
-#    define NOMINMAX
-#    define BRAINFUCK_NOMONMAX_IS_NOT_DEFINED
-#  endif
-#  ifdef WIN32_LEAN_AND_MEAN
-#    define WIN32_LEAN_AND_MEAN
-#    define BRAINFUCK_WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED
-#  endif
-#  include <windows.h>
-#  ifdef BRAINFUCK_NOMONMAX_IS_NOT_DEFINED
-#    undef NOMINMAX
-#  endif
-#  ifdef BRAINFUCK_WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED
-#    undef WIN32_LEAN_AND_MEAN
-#  endif
-#endif  // defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+#include "winsubset.h"
 
 
 static const char *
@@ -191,23 +174,15 @@ Brainfuck::xbyakDump(void)
   std::cout << "#include <stdio.h>\n"
                "#include <stdlib.h>\n"
 #if defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
-               "#ifndef NOMINMAX\n"
-               "#  define NOMINMAX\n"
-               "#  define NOMINMAX_IS_NOT_DEFINED\n"
-               "#endif\n"
-               "#ifdef WIN32_LEAN_AND_MEAN\n"
+               "#ifndef WIN32_LEAN_AND_MEAN\n"
                "#  define WIN32_LEAN_AND_MEAN\n"
                "#  define WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED\n"
                "#endif\n"
                "#include <windows.h>\n"
-               "#ifdef NOMONMAX_IS_NOT_DEFINED\n"
-               "#  undef NOMINMAX\n"
-               "#endif\n"
-               "#undef NOMONMAX_IS_NOT_DEFINED\n"
-               "#ifdef LEAN_AND_MEAN_IS_NOT_DEFINED\n"
+               "#ifdef WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED\n"
+               "#  undef WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED\n"
                "#  undef WIN32_LEAN_AND_MEAN\n"
                "#endif\n"
-               "#undef LEAN_AND_MEAN_IS_NOT_DEFINED\n"
 #elif defined(__linux__)
                "#include <unistd.h>\n"
                "#include <sys/mman.h>\n"
@@ -297,7 +272,6 @@ Brainfuck::translate(LANG lang)
 }
 
 
-#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 /*!
  * @brief Generate executable Windows binary
  * @param [in] wbt  Binary type
@@ -311,7 +285,6 @@ Brainfuck::generateWinBinary(WinBinType wbt)
       break;
   }
 }
-#endif  // defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 
 
 
@@ -675,7 +648,6 @@ Brainfuck::generateCode(TCodeGenerator &cg)
 }
 
 
-#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 /*!
  * @brief Generate X86 Executable Windows binary
  */
@@ -793,7 +765,6 @@ Brainfuck::generateX86WinBinary(void)
   writeIData(exeBin);
   exeBinSize = EXE_SIZE;
 }
-#endif  // defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 
 
 
@@ -872,7 +843,6 @@ toStr(int labelNo, Direction dir)
 #endif  // USE_XBYAK
 
 
-#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 /*!
  * @brief Write PE Header to array
  * @param [out] exeBin    Destination executable binary array
@@ -999,4 +969,3 @@ writeIData(unsigned char *exeBin)
   ptr += sizeof(short);
   std::memcpy(ptr, "getchar", 8);
 }
-#endif  // defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
