@@ -39,9 +39,7 @@ public:
 
   Brainfuck(std::size_t memorySize=65536) :
     memorySize(memorySize), sourceBuffer(NULL), compileType(NO_COMPILE)
-#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
     , exeBin(NULL), exeBinSize(0)
-#endif  // defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 #ifdef USE_XBYAK
     , generator(GENERATOR_SIZE), xbyakRtStackSize(XBYAK_RT_STACK_SIZE), xbyakRtStack(NULL)
 #endif  // USE_XBYAK
@@ -78,10 +76,8 @@ private:
   char *sourceBuffer;
   std::vector<Command> commands;
   CompileType compileType;
-#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
   unsigned char *exeBin;
   std::size_t exeBinSize;
-#endif  // defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 #ifdef USE_XBYAK
   static const unsigned int GENERATOR_SIZE = 100000;
   static const unsigned int XBYAK_RT_STACK_SIZE = 128 * 1024;
@@ -104,7 +100,6 @@ private:
 };
 
 
-#if defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 /*!
  * @brief Get executable Windows binary
  * @return Pointer to executable Windows binary
@@ -125,7 +120,6 @@ Brainfuck::getWinBinarySize(void) const
 {
   return exeBinSize;
 }
-#endif  // defined(_WIN32) || defined(_WIN64) || (__CYGWIN__)
 
 
 #endif  // BRAINFUCK_H
