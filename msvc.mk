@@ -37,6 +37,7 @@ MSVC_MACROS = /DNDEBUG /D_CRT_SECURE_NO_WARNINGS /D_CRT_NONSTDC_NO_WARNINGS \
 CPP      = cl
 RM       = del /F
 MAKE     = $(MAKE) /nologo
+MAKEFILE = msvc.mk
 GIT      = git
 INCS     = $(XBYAK_INCS) $(GETOPT_INCS) $(MSVCDBG_INCS)
 MACROS   = /DUSE_XBYAK /DXBYAK_NO_OP_NAMES $(MSVC_MACROS)
@@ -46,11 +47,21 @@ LDLIBS   = /link $(GETOPT_LDLIBS)
 
 TARGET   = brainfuck.exe
 MAIN_OBJ = main.obj
-OBJ      = brainfuck.obj
+OBJ1     = brainfuck.obj
 MAIN_SRC = $(MAIN_OBJ:.obj=.cpp)
-SRC      = $(OBJ:.obj=.cpp)
-HEADER   = $(OBJ:.obj=.h)
-MAKEFILE = msvc.mk
+SRC1     = $(OBJ1:.obj=.cpp)
+HEADER1  = $(OBJ1:.obj=.h)
+HEADER2  = CodeGenerator/CodeGenerator.h
+HEADER3  = CodeGenerator/_AllGenerator.h
+HEADER4  = winsubset.h
+GENERATORS_DIR = CodeGenerator/Lang
+GENERATORS = $(GENERATORS_DIR)/GeneratorC.h \
+             $(GENERATORS_DIR)/GeneratorCpp.h \
+             $(GENERATORS_DIR)/GeneratorCSharp.h \
+             $(GENERATORS_DIR)/GeneratorJava.h \
+             $(GENERATORS_DIR)/GeneratorLua.h \
+             $(GENERATORS_DIR)/GeneratorPython.h \
+             $(GENERATORS_DIR)/GeneratorRuby.h
 
 
 .SUFFIXES: .cpp .obj .exe
@@ -62,11 +73,15 @@ MAKEFILE = msvc.mk
 
 all: $(GETOPT_LIBS_DIR)/$(GETOPT_LIB) $(XBYAK_DIR)/xbyak/xbyak.h $(MSVCDBG_DIR)/NUL $(TARGET)
 
-$(TARGET): $(MAIN_OBJ) $(OBJ)
+$(TARGET): $(MAIN_OBJ) $(OBJ1)
 
-$(MAIN_OBJ): $(MAIN_SRC) $(HEADER)
+$(MAIN_OBJ): $(MAIN_SRC)
 
-$(OBJ): $(SRC) $(HEADER)
+$(MAIN_SRC): $(HEADER1) $(HEADER2)
+
+$(OBJ1): $(SRC1)
+
+$(SRC1): $(HEADER1) $(HEADER2) $(HEADER3) $(GENERATORS) $(HEADER4)
 
 
 $(XBYAK_DIR)/xbyak/xbyak.h:
@@ -88,6 +103,6 @@ test:
 
 
 clean:
-	$(RM) $(TARGET) $(MAIN_OBJ) $(OBJ) *.ilk *.pdb
+	$(RM) $(TARGET) $(MAIN_OBJ) $(OBJ1) *.ilk *.pdb
 cleanobj:
-	$(RM) $(MAIN_OBJ) $(OBJ) *.ilk *.pdb
+	$(RM) $(MAIN_OBJ) $(OBJ1) *.ilk *.pdb
