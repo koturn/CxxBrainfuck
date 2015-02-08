@@ -47,6 +47,12 @@ static void
 toLowerCase(char *str);
 
 
+#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+static const char *DEFAULT_OUTPUT_FILE_NAME = "a.exe";
+#else
+static const char *DEFAULT_OUTPUT_FILE_NAME = "a.out";
+#endif
+
 
 
 /*!
@@ -94,12 +100,14 @@ main(int argc, char *argv[])
 #endif
       if (!std::strcmp(target, "winx86")) {
         bf.generateWinBinary(Brainfuck::WIN_BIN_X86);
-        std::ofstream fout("output.exe", std::ios::out | std::ios::binary | std::ios::trunc);
-        if (!fout) {
-          std::cerr << "Cannot open file: output.exe" << std::endl;
-        }
-        fout.write(reinterpret_cast<const char *>(bf.getWinBinary()), bf.getWinBinarySize());
+      } else if (!std::strcmp(target, "elfx64")) {
+        bf.generateWinBinary(Brainfuck::ELF_BIN_X64);
       }
+      std::ofstream fout(DEFAULT_OUTPUT_FILE_NAME, std::ios::out | std::ios::binary | std::ios::trunc);
+      if (!fout) {
+        std::cerr << "Cannot open file: output.exe" << std::endl;
+      }
+      fout.write(reinterpret_cast<const char *>(bf.getWinBinary()), bf.getWinBinarySize());
     }
   } catch (const char *errmsg) {
     std::cerr << errmsg << std::endl;
@@ -190,6 +198,7 @@ OptionParser::help(void) const
                "      - xbyakc: Compile to C source code dumped from Xbyak Code generator\n"
 #endif
                "      - winx86: Compile to x86 Windows executable binary\n"
+               "      - elfx64: Compile to x64 Elf binary\n"
                "  -h, --help\n"
                "    Show help and exit this program\n"
                "  -O OPT_LEVEL, --optimize=OPT_LEVEL\n"

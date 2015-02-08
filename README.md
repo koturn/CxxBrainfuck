@@ -63,6 +63,7 @@ $ ./brainfuck.out [Brainfuck source file]
     - ```ruby```:   Compile to Python source code
     - ```xbyakc```: Compile to C source code dumped from Xbyak Code generator
     - ```winx86```: Compile to x86 Windows executable binary
+    - ```elfx64```: Compile to x64 ELF binary
 - ```-h```, ```--help```
   - Show help and exit this program
 - ```-O OPT_LEVEL```, ```--optimize=OPT_LEVEL```
@@ -115,8 +116,9 @@ Use [msvc.mk](msvc.mk).
 ## References
 
 - [Brainfuck](http://en.wikipedia.org/wiki/Brainfuck)
-- [7shi/bfexe](https://github.com/7shi/bfexe)
 - [hayamiz/dbtimes-vol01](https://github.com/hayamiz/dbtimes-vol01)
+- [7shi/bfexe](https://github.com/7shi/bfexe)
+- [簡易brainf*ckコンパイラを作る part3 - わらばんし仄聞記](http://warabanshi.hatenablog.com/entry/2013/01/05/131602)
 
 
 ## Dependent libraries

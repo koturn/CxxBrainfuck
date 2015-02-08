@@ -34,12 +34,13 @@ public:
   } LANG;
 
   typedef enum {
-    WIN_BIN_X86
-  } WinBinType;
+    WIN_BIN_X86,
+    ELF_BIN_X64
+  } BinType;
 
   Brainfuck(std::size_t memorySize=65536) :
     memorySize(memorySize), sourceBuffer(NULL), compileType(NO_COMPILE)
-    , exeBin(NULL), exeBinSize(0)
+    , binCode(NULL), binCodeSize(0)
 #ifdef USE_XBYAK
     , generator(GENERATOR_SIZE), xbyakRtStackSize(XBYAK_RT_STACK_SIZE), xbyakRtStack(NULL)
 #endif  // USE_XBYAK
@@ -51,7 +52,7 @@ public:
   void compile(CompileType compileType=NORMAL_COMPILE);
   void execute(void);
   void translate(LANG lang=LANG_C);
-  void generateWinBinary(WinBinType wbt=WIN_BIN_X86);
+  void generateWinBinary(BinType wbt=WIN_BIN_X86);
   inline const unsigned char *getWinBinary(void) const;
   inline std::size_t getWinBinarySize(void) const;
 #ifdef USE_XBYAK
@@ -76,8 +77,8 @@ private:
   char *sourceBuffer;
   std::vector<Command> commands;
   CompileType compileType;
-  unsigned char *exeBin;
-  std::size_t exeBinSize;
+  unsigned char *binCode;
+  std::size_t binCodeSize;
 #ifdef USE_XBYAK
   static const unsigned int GENERATOR_SIZE = 100000;
   static const unsigned int XBYAK_RT_STACK_SIZE = 128 * 1024;
@@ -93,6 +94,7 @@ private:
   template<class TCodeGenerator>
     void generateCode(TCodeGenerator &cg);
   void generateX86WinBinary(void);
+  void generateX64ElfBinary(void);
 #ifdef USE_XBYAK
   void xbyakJitCompile(void);
   void xbyakJitExecute(void);
@@ -107,7 +109,7 @@ private:
 inline const unsigned char *
 Brainfuck::getWinBinary(void) const
 {
-  return exeBin;
+  return binCode;
 }
 
 
@@ -118,7 +120,7 @@ Brainfuck::getWinBinary(void) const
 inline std::size_t
 Brainfuck::getWinBinarySize(void) const
 {
-  return exeBinSize;
+  return binCodeSize;
 }
 
 

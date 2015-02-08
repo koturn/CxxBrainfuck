@@ -4,6 +4,11 @@
 #include <iomanip>
 #include <iostream>
 #include <stack>
+#if __cplusplus >= 201103L
+#  include <cstdint>
+#else
+#  include <stdint.h>
+#endif
 
 #ifdef USE_XBYAK
 #  if !defined(XBYAK_NO_OP_NAMES) && defined(__GNUC__)
@@ -26,13 +31,17 @@ static unsigned int
 countChar(const char *srcptr, char ch);
 
 
-#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 inline static void
 writePEHeader(unsigned char *bin, std::size_t codeSize);
 
 inline static void
 writeIData(unsigned char *bin);
-#endif  // defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+
+inline static void
+writeElfHeader(unsigned char *elfBin, std::size_t codeSize);
+
+inline static void
+writeElfFooter(unsigned char *elfBin, std::size_t codeSize);
 
 
 #ifdef USE_XBYAK
@@ -56,9 +65,7 @@ toStr(int labelNo, Direction dir);
 Brainfuck::~Brainfuck(void)
 {
   delete[] sourceBuffer;
-#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
-  delete[] exeBin;
-#endif  // defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+  delete[] binCode;
 #ifdef USE_XBYAK
   delete[] xbyakRtStack;
 #endif  // USE_XBYAK
@@ -277,11 +284,14 @@ Brainfuck::translate(LANG lang)
  * @param [in] wbt  Binary type
  */
 void
-Brainfuck::generateWinBinary(WinBinType wbt)
+Brainfuck::generateWinBinary(BinType wbt)
 {
   switch (wbt) {
     case WIN_BIN_X86:
       generateX86WinBinary();
+      break;
+    case ELF_BIN_X64:
+      generateX64ElfBinary();
       break;
   }
 }
@@ -661,109 +671,215 @@ Brainfuck::generateX86WinBinary(void)
   const int ADDR_BUF = 0x00406000;
   std::stack<int> loopStack;
 
-  delete[] exeBin;
-  exeBin = new unsigned char[EXE_SIZE];
-  std::memset(exeBin, 0, EXE_SIZE);
+  delete[] binCode;
+  binCode = new unsigned char[EXE_SIZE];
+  std::memset(binCode, 0, EXE_SIZE);
 
   if (commands.size() == 0 && compileType != NO_COMPILE) {
     compile();
   }
-  exeBin[HEADER_OFFSET] = 0x31; exeBin[HEADER_OFFSET + 1] = 0xc9;  // xor ecx, ecx
-  exeBin[HEADER_OFFSET + 2] = 0x57;  // push edi
-  exeBin[HEADER_OFFSET + 3] = 0xbf; *reinterpret_cast<int *>(&exeBin[HEADER_OFFSET + 4]) = ADDR_BUF;  // mov edi, addr_buf
+  binCode[HEADER_OFFSET] = 0x31; binCode[HEADER_OFFSET + 1] = 0xc9;  // xor ecx, ecx
+  binCode[HEADER_OFFSET + 2] = 0x57;  // push edi
+  binCode[HEADER_OFFSET + 3] = 0xbf; *reinterpret_cast<int *>(&binCode[HEADER_OFFSET + 4]) = ADDR_BUF;  // mov edi, addr_buf
 
   int idx = HEADER_OFFSET + 8;
   for (std::vector<Command>::size_type pc = 0, size = commands.size(); pc < size; pc++) {
     switch (commands[pc].type) {
       case PTR_ADD:
         for (unsigned int i = 0; i < commands[pc].value; i++) {
-          exeBin[idx] = 0x66; exeBin[idx + 1] = 0x41;  // inc cx
+          binCode[idx] = 0x66; binCode[idx + 1] = 0x41;  // inc cx
           idx += 2;
         }
         break;
       case PTR_SUB:
         for (unsigned int i = 0; i < commands[pc].value; i++) {
-          exeBin[idx] = 0x66; exeBin[idx + 1] = 0x49;  // dec cx
+          binCode[idx] = 0x66; binCode[idx + 1] = 0x49;  // dec cx
           idx += 2;
         }
         break;
       case ADD:
         for (unsigned int i = 0; i < commands[pc].value; i++) {
-          exeBin[idx] = 0xfe; exeBin[idx + 1] = 0x04; exeBin[idx + 2] = 0x0f;  // inc byte [edi+ecx]
+          binCode[idx] = 0xfe; binCode[idx + 1] = 0x04; binCode[idx + 2] = 0x0f;  // inc byte [edi+ecx]
           idx += 3;
         }
         break;
       case SUB:
         for (unsigned int i = 0; i < commands[pc].value; i++) {
-          exeBin[idx] = 0xfe; exeBin[idx + 1] = 0x0c; exeBin[idx + 2] = 0x0f;  // dec byte [edi+ecx]
+          binCode[idx] = 0xfe; binCode[idx + 1] = 0x0c; binCode[idx + 2] = 0x0f;  // dec byte [edi+ecx]
           idx += 3;
         }
         break;
       case PUTCHAR:
-        exeBin[idx] = 0x51;  // push ecx
-        *reinterpret_cast<int *>(&exeBin[idx + 1]) = 0x0f04b60f;  // movzx eax,byte [edi+ecx]
-        exeBin[idx + 5] = 0x50;  // push eax
-        exeBin[idx + 6] = 0xa1; *reinterpret_cast<int *>(&exeBin[idx + 7]) = ADDR_PUTCHAR;  // mov eax, [addr_putchar]
-        exeBin[idx + 11] = 0xff; exeBin[idx + 12] = 0xd0;  // call eax
-        exeBin[idx + 13] = 0x58;  // pop eax
-        exeBin[idx + 14] = 0x59;  // pop ecx
+        binCode[idx] = 0x51;  // push ecx
+        *reinterpret_cast<int *>(&binCode[idx + 1]) = 0x0f04b60f;  // movzx eax,byte [edi+ecx]
+        binCode[idx + 5] = 0x50;  // push eax
+        binCode[idx + 6] = 0xa1; *reinterpret_cast<int *>(&binCode[idx + 7]) = ADDR_PUTCHAR;  // mov eax, [addr_putchar]
+        binCode[idx + 11] = 0xff; binCode[idx + 12] = 0xd0;  // call eax
+        binCode[idx + 13] = 0x58;  // pop eax
+        binCode[idx + 14] = 0x59;  // pop ecx
         idx += 15;
         break;
       case GETCHAR:
-        exeBin[idx] = 0x51;  // push ecx
-        exeBin[idx + 1] = 0xa1; *reinterpret_cast<int *>(&exeBin[idx + 2]) = ADDR_GETCHAR;  // mov eax, [addr_getchar]
-        exeBin[idx + 6] = 0xff; exeBin[idx + 7] = 0xd0;  // call eax
-        exeBin[idx + 8] = 0x59;  // pop ecx
-        exeBin[idx + 9] = 0x88; exeBin[idx + 10] = 0x04; exeBin[idx + 11] = 0x0f;  // mov [edi+ecx],al
+        binCode[idx] = 0x51;  // push ecx
+        binCode[idx + 1] = 0xa1; *reinterpret_cast<int *>(&binCode[idx + 2]) = ADDR_GETCHAR;  // mov eax, [addr_getchar]
+        binCode[idx + 6] = 0xff; binCode[idx + 7] = 0xd0;  // call eax
+        binCode[idx + 8] = 0x59;  // pop ecx
+        binCode[idx + 9] = 0x88; binCode[idx + 10] = 0x04; binCode[idx + 11] = 0x0f;  // mov [edi+ecx],al
         idx += 12;
         break;
       case LOOP_START:
         loopStack.push(idx);
-        *reinterpret_cast<int *>(&exeBin[idx]) = 0x000f3c80;  // cmp byte [edi+ecx], 0
+        *reinterpret_cast<int *>(&binCode[idx]) = 0x000f3c80;  // cmp byte [edi+ecx], 0
         // jz Jump to just behind the corresponding ] (define address later)
-        exeBin[idx + 4] = 0x0f; exeBin[idx + 5] = 0x84;
+        binCode[idx + 4] = 0x0f; binCode[idx + 5] = 0x84;
         idx += 10;
         break;
       case LOOP_END:
         {
           int idxLoop = loopStack.top();
           loopStack.pop();
-          exeBin[idx] = 0xe9; *reinterpret_cast<int *>(&exeBin[idx + 1]) = idxLoop - (idx + 5);  // jmp idxLoop
+          binCode[idx] = 0xe9; *reinterpret_cast<int *>(&binCode[idx + 1]) = idxLoop - (idx + 5);  // jmp idxLoop
           idx += 5;
-          *reinterpret_cast<int *>(&exeBin[idxLoop + 6]) = idx - (idxLoop + 10);  // Rewrites the top of the loop
+          *reinterpret_cast<int *>(&binCode[idxLoop + 6]) = idx - (idxLoop + 10);  // Rewrites the top of the loop
         }
         break;
       case ASSIGN_ZERO:
         // LOOP_START
         pc += 2;
         loopStack.push(idx);
-        *reinterpret_cast<int *>(&exeBin[idx]) = 0x000f3c80;  // cmp byte [edi+ecx], 0
-        exeBin[idx + 4] = 0x0f; exeBin[idx + 5] = 0x84;
+        *reinterpret_cast<int *>(&binCode[idx]) = 0x000f3c80;  // cmp byte [edi+ecx], 0
+        binCode[idx + 4] = 0x0f; binCode[idx + 5] = 0x84;
         idx += 10;
         // SUB
-        exeBin[idx] = 0xfe; exeBin[idx + 1] = 0x0c; exeBin[idx + 2] = 0x0f;  // dec byte [edi+ecx]
+        binCode[idx] = 0xfe; binCode[idx + 1] = 0x0c; binCode[idx + 2] = 0x0f;  // dec byte [edi+ecx]
         idx += 3;
         // LOOP_END
         {
           int idxLoop = loopStack.top();
           loopStack.pop();
-          exeBin[idx] = 0xe9; *reinterpret_cast<int *>(&exeBin[idx + 1]) = idxLoop - (idx + 5);  // jmp idxLoop
+          binCode[idx] = 0xe9; *reinterpret_cast<int *>(&binCode[idx + 1]) = idxLoop - (idx + 5);  // jmp idxLoop
           idx += 5;
-          *reinterpret_cast<int *>(&exeBin[idxLoop + 6]) = idx - (idxLoop + 10);  // Rewrites the top of the loop
+          *reinterpret_cast<int *>(&binCode[idxLoop + 6]) = idx - (idxLoop + 10);  // Rewrites the top of the loop
         }
         break;
     }
-    if (static_cast<std::size_t>(idx) > sizeof(exeBin) - 32) {
+    if (static_cast<std::size_t>(idx) > sizeof(binCode) - 32) {
       throw "Output size has been exceeded\n";
     }
   }
-  exeBin[idx] = 0x5f;  // pop edi
-  exeBin[idx + 1] = 0x31; exeBin[idx + 2] = 0xc0;  // xor eax, eax
-  exeBin[idx + 3] = 0xc3;  // ret
+  binCode[idx] = 0x5f;  // pop edi
+  binCode[idx + 1] = 0x31; binCode[idx + 2] = 0xc0;  // xor eax, eax
+  binCode[idx + 3] = 0xc3;  // ret
 
-  writePEHeader(exeBin, EXE_SIZE - HEADER_OFFSET);
-  writeIData(exeBin);
-  exeBinSize = EXE_SIZE;
+  writePEHeader(binCode, EXE_SIZE - HEADER_OFFSET);
+  writeIData(binCode);
+  binCodeSize = EXE_SIZE;
+}
+
+
+/*!
+ * @brief Generate x64 Executable Elf binary
+ */
+void
+Brainfuck::generateX64ElfBinary(void)
+{
+  static const unsigned int ELF_SIZE = 64 * 1024 + 64 + 112 + 22 + 256;
+  std::stack<unsigned char *> loopStack;
+
+  delete[] binCode;
+  binCode = new unsigned char[ELF_SIZE];
+  std::memset(binCode, 0, ELF_SIZE);
+
+  if (commands.size() == 0 && compileType != NO_COMPILE) {
+    compile();
+  }
+
+  unsigned char *const base = binCode;
+  unsigned char *b = base + 64 + 112;
+
+  // mov rbx, 0x0000000000000000  (set .bss address)
+  *b++ = 0x48; *b++ = 0xbb;
+  *reinterpret_cast<uint64_t *>(b) = 0x08248000; b += sizeof(uint64_t);
+
+  for (std::vector<Command>::size_type pc = 0, size = commands.size(); pc < size; pc++) {
+    switch (commands[pc].type) {
+      case PTR_ADD:
+        for (unsigned int i = 0; i < commands[pc].value; i++) {
+          *b++ = 0x48; *b++ = 0xff; *b++ = 0xc3;  // inc rbx
+        }
+        break;
+      case PTR_SUB:
+        for (unsigned int i = 0; i < commands[pc].value; i++) {
+          *b++ = 0x48; *b++ = 0xff; *b++ = 0xcb;  // dec rbx
+        }
+        break;
+      case ADD:
+        for (unsigned int i = 0; i < commands[pc].value; i++) {
+          *b++ = 0xfe; *b++ = 0x03;  // inc byte ptr [rbx]
+        }
+        break;
+      case SUB:
+        for (unsigned int i = 0; i < commands[pc].value; i++) {
+          *b++ = 0xfe; *b++ = 0x0b;  // dec byte ptr [rbx]
+        }
+        break;
+      case PUTCHAR:
+        *b++ = 0x48; *b++ = 0xc7; *b++ = 0xc0; *b++ = 0x01; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // mov rax, 1 (set system call to write)
+        *b++ = 0xba; *b++ = 0x01; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // mov edx, 0x01 (3rd argument)
+        *b++ = 0x48; *b++ = 0x89; *b++ = 0xde;  // mov rsi, rbx (2nd argument)
+        *b++ = 0xbf; *b++ = 0x01; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // mov edi, 0x1 (1st argument)
+        *b++ = 0x0f; *b++ = 0x05;  // syscall
+        break;
+      case GETCHAR:
+        *b++ = 0x48; *b++ = 0xc7; *b++ = 0xc0; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // mov rax, 0 (set system call to write)
+        *b++ = 0xba; *b++ = 0x01; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // mov edx, 0x01 (3rd argument)
+        *b++ = 0x48; *b++ = 0x89; *b++ = 0xde;  // mov rsi, rbx (2nd argument)
+        *b++ = 0xbf; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // mov edi, 0x0 (1st argument)
+        *b++ = 0x0f; *b++ = 0x05;  // syscall
+        break;
+      case LOOP_START:
+        loopStack.push(b);
+        *b++ = 0x80; *b++ = 0x3b; *b++ = 0x00;  // cmp byte ptr [rbx], 0
+        *b++ = 0x0f; *b++ = 0x84;
+        *reinterpret_cast<uint32_t *>(b) = 0x00000000; b += sizeof(uint32_t);
+        break;
+      case LOOP_END:
+        {
+          unsigned char *_b = loopStack.top();
+          loopStack.pop();
+          *b++ = 0xe9;
+          *reinterpret_cast<int32_t *>(b) = -static_cast<int32_t>(b + sizeof(int32_t) - _b); b += sizeof(int32_t);
+          *reinterpret_cast<int32_t *>(_b + 5) = static_cast<int32_t>(b - (_b + 9));
+        }
+        break;
+      case ASSIGN_ZERO:
+        loopStack.push(b);
+        *b++ = 0x80; *b++ = 0x3b; *b++ = 0x00;  // cmp byte ptr [rbx], 0
+        *b++ = 0x0f; *b++ = 0x84;
+        *reinterpret_cast<uint32_t *>(b) = 0x00000000; b += sizeof(uint32_t);
+
+        *b++ = 0xfe; *b++ = 0x0b;  // dec byte ptr [rbx]
+
+        {
+          unsigned char *_b = loopStack.top();
+          loopStack.pop();
+          *b++ = 0xe9;
+          *reinterpret_cast<int32_t *>(b) = -static_cast<int32_t>(b + sizeof(int32_t) - _b); b += sizeof(int32_t);
+          *reinterpret_cast<int32_t *>(_b + 5) = static_cast<int32_t>(b - (_b + 9));
+        }
+        break;
+    }
+  }
+
+  *b++ = 0xb8; *b++ = 0x3c; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
+  *b++ = 0xbf; *b++ = 0x2a; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
+  *b++ = 0x0f; *b++ = 0x05;
+
+  std::size_t codeSize = b - (base + 64 + 112);
+
+  writeElfHeader(base, codeSize);
+  writeElfFooter(base + 64 + 112 + codeSize, codeSize);
+  binCodeSize = codeSize + 64 + 112 + 22 + 256;
 }
 
 
@@ -845,11 +961,11 @@ toStr(int labelNo, Direction dir)
 
 /*!
  * @brief Write PE Header to array
- * @param [out] exeBin    Destination executable binary array
+ * @param [out] binCode   Destination executable binary array
  * @param [in]  codeSize  Size of code
  */
 inline static void
-writePEHeader(unsigned char *exeBin, std::size_t codeSize)
+writePEHeader(unsigned char *binCode, std::size_t codeSize)
 {
   static const unsigned char STUB[] = {
     // 00-3b: DOS Header
@@ -870,7 +986,7 @@ writePEHeader(unsigned char *exeBin, std::size_t codeSize)
   const static IMAGE_FILE_HEADER COFF = {
     0x014c, 3, 0, 0, 0, sizeof(IMAGE_OPTIONAL_HEADER32), 0x030f
   };
-  unsigned char *ptr = exeBin;
+  unsigned char *ptr = binCode;
   std::memcpy(ptr, STUB, sizeof(STUB));
   ptr += sizeof(STUB);
   std::memcpy(ptr, &COFF, sizeof(COFF));
@@ -936,10 +1052,10 @@ writePEHeader(unsigned char *exeBin, std::size_t codeSize)
 
 /*!
  * @brief Write IData to array
- * @param [out] exeBin    Destination executable binary array
+ * @param [out] binCode   Destination executable binary array
  */
 inline static void
-writeIData(unsigned char *exeBin)
+writeIData(unsigned char *binCode)
 {
   static const int IDT[] = {
     // IDT 1
@@ -950,7 +1066,7 @@ writeIData(unsigned char *exeBin)
   static const int ILT_IAT[] = {
     0x5050, 0x505a, 0
   };
-  unsigned char *ptr = exeBin + 0x200;
+  unsigned char *ptr = binCode + 0x200;
   short s = 0x0000;
 
   std::memcpy(ptr, IDT, sizeof(IDT));
@@ -968,4 +1084,122 @@ writeIData(unsigned char *exeBin)
   std::memcpy(ptr, &s, sizeof(s));
   ptr += sizeof(short);
   std::memcpy(ptr, "getchar", 8);
+}
+
+
+/*!
+ * @brief Write header of ELF binary
+ * @param [out] elfBin    Pointer to ELF binary
+ * @param [in]  codeSize  Size of code
+ */
+inline static void
+writeElfHeader(unsigned char *elfBin, std::size_t codeSize)
+{
+  static const uint64_t ADDR = 0x08048000;
+  unsigned char *b = elfBin;
+
+  // ELF header (64 bytes)
+  *b++ = 0x7f; *b++ = 0x45; *b++ = 0x4c; *b++ = 0x46; *b++ = 0x02; *b++ = 0x01; *b++ = 0x01; // e_ident
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
+  *b++ = 0x02; *b++ = 0x00;  // e_type
+  *b++ = 0x3e; *b++ = 0x00;  // e_machine
+  *b++ = 0x01; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // e_version
+  *reinterpret_cast<uint64_t *>(b) = ADDR + 64 + 112; b += sizeof(uint64_t);  // e_entry
+  *reinterpret_cast<uint64_t *>(b) = 64; b += sizeof(uint64_t);  // e_phoff
+  *reinterpret_cast<uint64_t *>(b) = (64 + 112 + codeSize + 22); b += sizeof(uint64_t);  // e_phoff
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // e_flags
+  *reinterpret_cast<uint16_t *>(b) = 64; b += sizeof(uint16_t);  // e_ehsize
+  *reinterpret_cast<uint16_t *>(b) = 56; b += sizeof(uint16_t);  // e_phentisize
+  *b++ = 0x02; *b++ = 0x00;  // e_phnum
+  *b++ = 0x40; *b++ = 0x00;  // e_shentsize
+  *b++ = 0x04; *b++ = 0x00;  // e_shnum
+  *b++ = 0x01; *b++ = 0x00;  // e_shstrndx
+
+  // program header (56 bytes)
+  *b++ = 0x01; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_type
+  *b++ = 0x05; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_flags
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_offset
+  *reinterpret_cast<uint64_t *>(b) = ADDR; b += sizeof(uint64_t);  // p_vaddr
+  *reinterpret_cast<uint64_t *>(b) = ADDR; b += sizeof(uint64_t);  // p_paddr
+  *reinterpret_cast<uint64_t *>(b) = 64 + 112 + codeSize + 22 + 256; b += sizeof(uint64_t);  // p_filesz
+  *reinterpret_cast<uint64_t *>(b) = 64 + 112 + codeSize + 22 + 256; b += sizeof(uint64_t);  // p_memsz
+  *b++ = 0x00; *b++ = 0x10; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_align
+
+  // program header for .bss (56 bytes)
+  *b++ = 0x01; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_type
+  *b++ = 0x06; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_flags
+  *b++ = 0x00; *b++ = 0x10; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_offset
+  *reinterpret_cast<uint64_t *>(b) = ADDR + 0x200000; b += sizeof(uint64_t);  // p_vaddr
+  *reinterpret_cast<uint64_t *>(b) = ADDR + 0x200000; b += sizeof(uint64_t);  // p_paddr
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_filesz
+  *b++ = 0x30; *b++ = 0x75; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_memsz
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x20; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_align
+}
+
+
+/*!
+ * @brief Write footer of ELF binary
+ * @param [out] elfBin    Pointer to ELF binary
+ * @param [in]  codeSize  Size of code
+ */
+inline static void
+writeElfFooter(unsigned char *elfBin, std::size_t codeSize)
+{
+  static const uint64_t ADDR = 0x08048000;
+  unsigned char *b = elfBin;
+
+  // section string table (22bytes)
+  *b++ = 0x00;  // shstrtbl
+  *b++ = '.';  *b++ = 't';  *b++ = 'e';  *b++ = 'x';  *b++ = 't';  *b++ = '\0';  // ".text"
+  *b++ = '.';  *b++ = 's';  *b++ = 'h';  *b++ = 's';  *b++ = 't';  *b++ = 'r';  *b++ = 't';  *b++ = 'b';  *b++ = 'l';  *b++ = '\0';  // ".shstrtbl"
+  *b++ = '.';  *b++ = 'b';  *b++ = 's';  *b++ = 's';  *b++ = '\0';
+
+  // section header
+  // first section header (64 bytes)
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
+
+  // second section header (64 bytes)
+  *reinterpret_cast<uint32_t *>(b) = 7; b += sizeof(uint32_t);                                             // sh_name
+  *b++ = 0x03; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;                                                      // sh_type
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_flags
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_addr
+  *reinterpret_cast<uint64_t *>(b) = 64 + 112 + codeSize; b += sizeof(uint64_t);                           // sh_offset
+  *reinterpret_cast<uint64_t *>(b) = 22; b += sizeof(uint64_t);                                            // sh_size
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;                                                      // sh_link
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;                                                      // sh_info
+  *b++ = 0x01; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_addralign
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_endsize
+
+  // third section header (64 bytes)
+  *reinterpret_cast<uint32_t *>(b) = 1; b += sizeof(uint32_t);                                             // sh_name
+  *b++ = 0x01; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;                                                      // sh_type
+  *b++ = 0x06; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_flags
+  *reinterpret_cast<uint64_t *>(b) = ADDR + 64 + 112; b += sizeof(uint64_t);                               // sh_addr
+  *reinterpret_cast<uint64_t *>(b) = 64 + 112; b += sizeof(uint64_t);                                      // sh_offset
+  *reinterpret_cast<uint64_t *>(b) = codeSize; b += sizeof(uint64_t);                                      // sh_size
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;                                                      // sh_link
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;                                                      // sh_info
+  *b++ = 0x04; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_addralign
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_endsize
+
+  // fourth section header (64 bytes)
+  *reinterpret_cast<uint32_t *>(b) = 17; b += sizeof(uint32_t);                                            // sh_name
+  *b++ = 0x08; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;                                                      // sh_type
+  *b++ = 0x03; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_flags
+  *reinterpret_cast<uint64_t *>(b) = ADDR + 200000; b += sizeof(uint64_t);                                 // sh_addr
+  *b++ = 0x00; *b++ = 0x10; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_offset
+  *b++ = 0x30; *b++ = 0x75; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_size
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;                                                      // sh_link
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;                                                      // sh_info
+  *b++ = 0x10; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_addralign
+  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_endsize
 }
