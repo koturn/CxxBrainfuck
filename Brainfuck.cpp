@@ -19,6 +19,7 @@
 #include "Brainfuck.h"
 #include "CodeGenerator/_AllGenerator.h"
 #include "winsubset.h"
+#include "elfsubset.h"
 
 
 static const char *
@@ -32,16 +33,16 @@ countChar(const char *srcptr, char ch);
 
 
 inline static void
-writePEHeader(unsigned char *bin, std::size_t codeSize);
+writePEHeader(unsigned char *binCode, std::size_t codeSize);
 
 inline static void
-writeIData(unsigned char *bin);
+writeIData(unsigned char *binCode);
 
 inline static void
-writeElfHeader(unsigned char *elfBin, std::size_t codeSize);
+writeElfHeader(unsigned char *binCode, std::size_t codeSize);
 
 inline static void
-writeElfFooter(unsigned char *elfBin, std::size_t codeSize);
+writeElfFooter(unsigned char *binCode, std::size_t codeSize);
 
 
 #ifdef USE_XBYAK
@@ -1052,7 +1053,7 @@ writePEHeader(unsigned char *binCode, std::size_t codeSize)
 
 /*!
  * @brief Write IData to array
- * @param [out] binCode   Destination executable binary array
+ * @param [out] binCode  Destination executable binary array
  */
 inline static void
 writeIData(unsigned char *binCode)
@@ -1089,117 +1090,128 @@ writeIData(unsigned char *binCode)
 
 /*!
  * @brief Write header of ELF binary
- * @param [out] elfBin    Pointer to ELF binary
+ * @param [out] binCode   Pointer to ELF binary
  * @param [in]  codeSize  Size of code
  */
 inline static void
-writeElfHeader(unsigned char *elfBin, std::size_t codeSize)
+writeElfHeader(unsigned char *binCode, std::size_t codeSize)
 {
   static const uint64_t ADDR = 0x08048000;
-  unsigned char *b = elfBin;
 
-  // ELF header (64 bytes)
-  *b++ = 0x7f; *b++ = 0x45; *b++ = 0x4c; *b++ = 0x46; *b++ = 0x02; *b++ = 0x01; *b++ = 0x01; // e_ident
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
-  *b++ = 0x02; *b++ = 0x00;  // e_type
-  *b++ = 0x3e; *b++ = 0x00;  // e_machine
-  *b++ = 0x01; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // e_version
-  *reinterpret_cast<uint64_t *>(b) = ADDR + 64 + 112; b += sizeof(uint64_t);  // e_entry
-  *reinterpret_cast<uint64_t *>(b) = 64; b += sizeof(uint64_t);  // e_phoff
-  *reinterpret_cast<uint64_t *>(b) = (64 + 112 + codeSize + 22); b += sizeof(uint64_t);  // e_phoff
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // e_flags
-  *reinterpret_cast<uint16_t *>(b) = 64; b += sizeof(uint16_t);  // e_ehsize
-  *reinterpret_cast<uint16_t *>(b) = 56; b += sizeof(uint16_t);  // e_phentisize
-  *b++ = 0x02; *b++ = 0x00;  // e_phnum
-  *b++ = 0x40; *b++ = 0x00;  // e_shentsize
-  *b++ = 0x04; *b++ = 0x00;  // e_shnum
-  *b++ = 0x01; *b++ = 0x00;  // e_shstrndx
+  // ELF header
+  Elf64_Ehdr *ehdr = reinterpret_cast<Elf64_Ehdr *>(binCode);
+  ehdr->e_ident[EI_MAG0] = ELFMAG0;
+  ehdr->e_ident[EI_MAG1] = ELFMAG1;
+  ehdr->e_ident[EI_MAG2] = ELFMAG2;
+  ehdr->e_ident[EI_MAG3] = ELFMAG3;
+  ehdr->e_ident[EI_CLASS] = ELFCLASS64;
+  ehdr->e_ident[EI_DATA] = ELFDATA2LSB;
+  ehdr->e_ident[EI_VERSION] = EV_CURRENT;
+  ehdr->e_ident[EI_OSABI] = 0x00;
+  ehdr->e_ident[EI_ABIVERSION] = 0x00;
+  ehdr->e_ident[EI_PAD] = 0x00;
+  ehdr->e_type = ET_EXEC;
+  ehdr->e_machine = EM_X86_64;
+  ehdr->e_version = EV_CURRENT;
+  ehdr->e_entry = ADDR + sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * 2;
+  ehdr->e_phoff = sizeof(Elf64_Ehdr);
+  ehdr->e_shoff = sizeof(Elf64_Ehdr) + (sizeof(Elf64_Phdr) * 2) + codeSize + 22;
+  ehdr->e_flags = 0x00000000;
+  ehdr->e_ehsize = sizeof(Elf64_Ehdr);
+  ehdr->e_phentsize = sizeof(Elf64_Phdr);
+  ehdr->e_phnum = 2;
+  ehdr->e_shentsize = sizeof(Elf64_Shdr);
+  ehdr->e_shnum = 4;
+  ehdr->e_shstrndx = 1;
 
-  // program header (56 bytes)
-  *b++ = 0x01; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_type
-  *b++ = 0x05; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_flags
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_offset
-  *reinterpret_cast<uint64_t *>(b) = ADDR; b += sizeof(uint64_t);  // p_vaddr
-  *reinterpret_cast<uint64_t *>(b) = ADDR; b += sizeof(uint64_t);  // p_paddr
-  *reinterpret_cast<uint64_t *>(b) = 64 + 112 + codeSize + 22 + 256; b += sizeof(uint64_t);  // p_filesz
-  *reinterpret_cast<uint64_t *>(b) = 64 + 112 + codeSize + 22 + 256; b += sizeof(uint64_t);  // p_memsz
-  *b++ = 0x00; *b++ = 0x10; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_align
+  // Program header
+  Elf64_Phdr *phdr = reinterpret_cast<Elf64_Phdr *>(binCode + sizeof(Elf64_Ehdr));
+  phdr->p_type = PT_LOAD;
+  phdr->p_flags = PF_R | PF_X;
+  phdr->p_offset = 0x0000000000000000;
+  phdr->p_vaddr = ADDR;
+  phdr->p_paddr = ADDR;
+  phdr->p_filesz = sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * 2 + codeSize + 22 + sizeof(Elf64_Shdr) * 4;
+  phdr->p_memsz = sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * 2 + codeSize + 22 + sizeof(Elf64_Shdr) * 4;
+  phdr->p_align = 0x0000000000000100;
 
   // program header for .bss (56 bytes)
-  *b++ = 0x01; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_type
-  *b++ = 0x06; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_flags
-  *b++ = 0x00; *b++ = 0x10; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_offset
-  *reinterpret_cast<uint64_t *>(b) = ADDR + 0x200000; b += sizeof(uint64_t);  // p_vaddr
-  *reinterpret_cast<uint64_t *>(b) = ADDR + 0x200000; b += sizeof(uint64_t);  // p_paddr
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_filesz
-  *b++ = 0x30; *b++ = 0x75; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_memsz
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x20; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // p_align
+  phdr = reinterpret_cast<Elf64_Phdr *>(binCode + sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr));
+  phdr->p_type = PT_LOAD;
+  phdr->p_flags = PF_R | PF_W;
+  phdr->p_offset = 0x0000000000001000;
+  phdr->p_vaddr = ADDR + 0x200000;
+  phdr->p_paddr = ADDR + 0x200000;
+  phdr->p_filesz = 0x0000000000000000;
+  phdr->p_memsz = 0x0000000000007530;
+  phdr->p_align = 0x0000000000200000;
 }
 
 
 /*!
  * @brief Write footer of ELF binary
- * @param [out] elfBin    Pointer to ELF binary
+ * @param [out] binCode   Pointer to ELF binary
  * @param [in]  codeSize  Size of code
  */
 inline static void
-writeElfFooter(unsigned char *elfBin, std::size_t codeSize)
+writeElfFooter(unsigned char *binCode, std::size_t codeSize)
 {
   static const uint64_t ADDR = 0x08048000;
-  unsigned char *b = elfBin;
+  static const char SHSTRTBL[] = "\0.text\0.shstrtbl\0.bss";
 
   // section string table (22bytes)
-  *b++ = 0x00;  // shstrtbl
-  *b++ = '.';  *b++ = 't';  *b++ = 'e';  *b++ = 'x';  *b++ = 't';  *b++ = '\0';  // ".text"
-  *b++ = '.';  *b++ = 's';  *b++ = 'h';  *b++ = 's';  *b++ = 't';  *b++ = 'r';  *b++ = 't';  *b++ = 'b';  *b++ = 'l';  *b++ = '\0';  // ".shstrtbl"
-  *b++ = '.';  *b++ = 'b';  *b++ = 's';  *b++ = 's';  *b++ = '\0';
+  std::memcpy(binCode, SHSTRTBL, sizeof(SHSTRTBL));
 
   // section header
-  // first section header (64 bytes)
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
+  // first section header
+  Elf64_Shdr *shdr = reinterpret_cast<Elf64_Shdr *>(binCode + sizeof(SHSTRTBL));
+  shdr->sh_name = 0;
+  shdr->sh_type = SHT_NULL;
+  shdr->sh_flags = 0x0000000000000000;
+  shdr->sh_addr = 0x0000000000000000;
+  shdr->sh_offset = 0x0000000000000000;
+  shdr->sh_size = 0x0000000000000000;
+  shdr->sh_link = 0x00000000;
+  shdr->sh_info = 0x00000000;
+  shdr->sh_addralign = 0x0000000000000000;
+  shdr->sh_entsize = 0x0000000000000000;
 
-  // second section header (64 bytes)
-  *reinterpret_cast<uint32_t *>(b) = 7; b += sizeof(uint32_t);                                             // sh_name
-  *b++ = 0x03; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;                                                      // sh_type
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_flags
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_addr
-  *reinterpret_cast<uint64_t *>(b) = 64 + 112 + codeSize; b += sizeof(uint64_t);                           // sh_offset
-  *reinterpret_cast<uint64_t *>(b) = 22; b += sizeof(uint64_t);                                            // sh_size
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;                                                      // sh_link
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;                                                      // sh_info
-  *b++ = 0x01; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_addralign
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_endsize
+  // second section header (.shstrtbl)
+  shdr = reinterpret_cast<Elf64_Shdr *>(binCode + sizeof(SHSTRTBL) + sizeof(Elf64_Shdr));
+  shdr->sh_name = 7;
+  shdr->sh_type = SHT_STRTAB;
+  shdr->sh_flags = 0x0000000000000000;
+  shdr->sh_addr = 0x0000000000000000;
+  shdr->sh_offset = sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * 2 + codeSize;
+  shdr->sh_size = sizeof(SHSTRTBL);
+  shdr->sh_link = 0x00000000;
+  shdr->sh_info = 0x00000000;
+  shdr->sh_addralign = 0x0000000000000001;
+  shdr->sh_entsize = 0x0000000000000000;
 
-  // third section header (64 bytes)
-  *reinterpret_cast<uint32_t *>(b) = 1; b += sizeof(uint32_t);                                             // sh_name
-  *b++ = 0x01; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;                                                      // sh_type
-  *b++ = 0x06; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_flags
-  *reinterpret_cast<uint64_t *>(b) = ADDR + 64 + 112; b += sizeof(uint64_t);                               // sh_addr
-  *reinterpret_cast<uint64_t *>(b) = 64 + 112; b += sizeof(uint64_t);                                      // sh_offset
-  *reinterpret_cast<uint64_t *>(b) = codeSize; b += sizeof(uint64_t);                                      // sh_size
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;                                                      // sh_link
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;                                                      // sh_info
-  *b++ = 0x04; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_addralign
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_endsize
+  // third section header (.text)
+  shdr = reinterpret_cast<Elf64_Shdr *>(binCode + sizeof(SHSTRTBL) + sizeof(Elf64_Shdr) * 2);
+  shdr->sh_name = 1;
+  shdr->sh_type = SHT_PROGBITS;
+  shdr->sh_flags = SHF_EXECINSTR | SHF_ALLOC;
+  shdr->sh_addr = ADDR + sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * 2;
+  shdr->sh_offset = sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * 2;
+  shdr->sh_size = codeSize;
+  shdr->sh_link = 0x00000000;
+  shdr->sh_info = 0x00000000;
+  shdr->sh_addralign = 0x0000000000000004;
+  shdr->sh_entsize = 0x0000000000000000;
 
-  // fourth section header (64 bytes)
-  *reinterpret_cast<uint32_t *>(b) = 17; b += sizeof(uint32_t);                                            // sh_name
-  *b++ = 0x08; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;                                                      // sh_type
-  *b++ = 0x03; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_flags
-  *reinterpret_cast<uint64_t *>(b) = ADDR + 200000; b += sizeof(uint64_t);                                 // sh_addr
-  *b++ = 0x00; *b++ = 0x10; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_offset
-  *b++ = 0x30; *b++ = 0x75; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_size
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;                                                      // sh_link
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;                                                      // sh_info
-  *b++ = 0x10; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_addralign
-  *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;  // sh_endsize
+  // fourth section header (.bss)
+  shdr = reinterpret_cast<Elf64_Shdr *>(binCode + sizeof(SHSTRTBL) + sizeof(Elf64_Shdr) * 3);
+  shdr->sh_name = 17;
+  shdr->sh_type = SHT_NOBITS;
+  shdr->sh_flags = SHF_ALLOC | SHF_WRITE;
+  shdr->sh_addr = ADDR + 0x200000;
+  shdr->sh_offset = 0x0000000000001000;
+  shdr->sh_size = 0x0000000000007530;
+  shdr->sh_link = 0x00000000;
+  shdr->sh_info = 0x00000000;
+  shdr->sh_addralign = 0x0000000000000010;
+  shdr->sh_entsize = 0x0000000000000000;
 }
