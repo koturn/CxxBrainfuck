@@ -784,7 +784,8 @@ Brainfuck::generateX86WinBinary(void)
 void
 Brainfuck::generateX64ElfBinary(void)
 {
-  static const unsigned int ELF_SIZE = 64 * 1024 + 64 + 112 + 22 + 256;
+  static const unsigned int ELF_SIZE =
+    64 * 1024 + sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * 2 + 22 + sizeof(Elf64_Shdr) * 4;
   std::stack<unsigned char *> loopStack;
 
   delete[] binCode;
@@ -796,7 +797,7 @@ Brainfuck::generateX64ElfBinary(void)
   }
 
   unsigned char *const base = binCode;
-  unsigned char *b = base + 64 + 112;
+  unsigned char *b = base + sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * 2;
 
   // mov rbx, 0x0000000000000000  (set .bss address)
   *b++ = 0x48; *b++ = 0xbb;
@@ -876,11 +877,11 @@ Brainfuck::generateX64ElfBinary(void)
   *b++ = 0xbf; *b++ = 0x2a; *b++ = 0x00; *b++ = 0x00; *b++ = 0x00;
   *b++ = 0x0f; *b++ = 0x05;
 
-  std::size_t codeSize = b - (base + 64 + 112);
+  std::size_t codeSize = b - (base + sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * 2);
 
   writeElfHeader(base, codeSize);
-  writeElfFooter(base + 64 + 112 + codeSize, codeSize);
-  binCodeSize = codeSize + 64 + 112 + 22 + 256;
+  writeElfFooter(base, codeSize);
+  binCodeSize = codeSize + sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * 2 + 22 + sizeof(Elf64_Shdr) * 4;
 }
 
 
@@ -978,76 +979,88 @@ writePEHeader(unsigned char *binCode, std::size_t codeSize)
     0x80, 0x00, 0x00, 0x00,
     // 40-7f: DOS Stub
     0xba, 0x10, 0x00, 0x0e, 0x1f, 0xb4, 0x09, 0xcd, 0x21, 0xb8, 0x01, 0x4c, 0xcd, 0x21, 0x90, 0x90,
-    'T', 'h', 'i', 's', ' ', 'p', 'r', 'o', 'g', 'r', 'a', 'm', ' ', 'c', 'a', 'n',
-    'n', 'o', 't', ' ', 'b', 'e', ' ', 'r', 'u', 'n', ' ', 'i', 'n', ' ', 'D', 'O',
-    'S', ' ', 'm', 'o', 'd', 'e', '.', '\r', '\n', '$', 0, 0, 0, 0, 0, 0,
+    'T',  'h',  'i',  's',  ' ',  'p',  'r',  'o',  'g',  'r',  'a',  'm',  ' ',  'c',  'a',  'n',
+    'n',  'o',  't',  ' ',  'b',  'e',  ' ',  'r',  'u',  'n',  ' ',  'i',  'n',  ' ',  'D',  'O',
+    'S',  ' ',  'm',  'o',  'd',  'e',  '.',  '\r', '\n', '$',  0,    0,    0,    0,    0,    0,
     // 80-83: PE Signature
-    'P', 'E', 0, 0
+    'P',  'E',  0,    0
   };
-  const static IMAGE_FILE_HEADER COFF = {
-    0x014c, 3, 0, 0, 0, sizeof(IMAGE_OPTIONAL_HEADER32), 0x030f
-  };
+
   unsigned char *ptr = binCode;
   std::memcpy(ptr, STUB, sizeof(STUB));
   ptr += sizeof(STUB);
-  std::memcpy(ptr, &COFF, sizeof(COFF));
-  ptr += sizeof(COFF);
 
-  IMAGE_OPTIONAL_HEADER32 opt = {
-    0x010b,  // Magic
-    6, 0,  // MajorLinkerVersion, MinorLinkerVersion
-    static_cast<DWORD>(codeSize),  // SizeOfCode
-    0,  // SizeOfInitializedData
-    65536,  // SizeOfUninitializedData
-    0x1000,  // AddressOfEntryPoint
-    0x1000,  // BaseOfCode
-    0x6000,  // BaseOfData
-    0x00400000,  // ImageBase
-    0x1000,  // SectionAlignment
-    0x0200,  // FileAlignment
-    4, 0,  // MajorOperatingSystemVersion, MinorOperatingSystemVersion
-    0, 0,  // MajorImageVersion, MinorImageVersion
-    4, 0,  // MajorSubsystemVersion, MinorSubsystemVersion
-    0,  // Win32VersionValue
-    0x16000,  // SizeOfImage
-    0x200,  // SizeOfHeaders
-    0,  // CheckSum
-    3,  // Subsystem
-    0,  // DllCharacteristics
-    1024 * 1024,  // SizeOfStackReserve
-    8 * 1024,  // SizeOfStackCommit
-    1024 * 1024,  // SizeOfHeapReserve
-    4 * 1024,  // SizeOfHeapCommit
-    0,  // LoaderFlags
-    16  // NumberOfRvaAndSizes
-  };
-  std::memset(opt.DataDirectory, 0, sizeof(opt.DataDirectory));
-  opt.DataDirectory[1].VirtualAddress = 0x5000;  // import table
-  opt.DataDirectory[1].Size = 100;
-  std::memcpy(ptr, &opt, sizeof(opt));
-  ptr += sizeof(opt);
+  IMAGE_FILE_HEADER *ifh = reinterpret_cast<IMAGE_FILE_HEADER *>(ptr);
+  ifh->Machine = 0x014c;
+  ifh->NumberOfSections = 3;
+  ifh->TimeDateStamp = 0;
+  ifh->PointerToSymbolTable = 0;
+  ifh->NumberOfSymbols = 0;
+  ifh->SizeOfOptionalHeader = sizeof(IMAGE_OPTIONAL_HEADER32);
+  ifh->Characteristics = 0x030f;
+  ptr += sizeof(IMAGE_FILE_HEADER);
 
-  IMAGE_SECTION_HEADER sects[3];
-  std::memset(sects, 0, sizeof(sects));
-  std::strcpy(reinterpret_cast<char *>(sects[0].Name), ".text");
-  sects[0].Misc.VirtualSize = static_cast<DWORD>(codeSize);
-  sects[0].VirtualAddress = 0x1000;
-  sects[0].SizeOfRawData = static_cast<DWORD>(codeSize);
-  sects[0].PointerToRawData = 0x400;
-  sects[0].Characteristics = 0x60500060;
+  IMAGE_OPTIONAL_HEADER32 *ioh = reinterpret_cast<IMAGE_OPTIONAL_HEADER32 *>(ptr);
+  ioh->Magic = 0x010b;
+  ioh->MajorLinkerVersion = 6;
+  ioh->MinorLinkerVersion = 0;
+  ioh->SizeOfCode = static_cast<DWORD>(codeSize);
+  ioh->SizeOfInitializedData = 0;
+  ioh->SizeOfUninitializedData = 65536;
+  ioh->AddressOfEntryPoint = 0x1000;
+  ioh->BaseOfCode = 0x1000;
+  ioh->BaseOfData = 0x6000;
+  ioh->ImageBase = 0x00400000;
+  ioh->SectionAlignment = 0x1000;
+  ioh->FileAlignment = 0x0200;
+  ioh->MajorOperatingSystemVersion = 4;
+  ioh->MinorOperatingSystemVersion = 0;
+  ioh->MajorImageVersion = 0;
+  ioh->MinorImageVersion = 0;
+  ioh->MajorSubsystemVersion = 4;
+  ioh->MinorSubsystemVersion = 0;
+  ioh->Win32VersionValue = 0;
+  ioh->SizeOfImage = 0x16000;
+  ioh->SizeOfHeaders = 0x200;
+  ioh->CheckSum = 0;
+  ioh->Subsystem = 3;
+  ioh->DllCharacteristics = 0;
+  ioh->SizeOfStackReserve = 1024 * 1024;
+  ioh->SizeOfStackCommit = 8 * 1024;
+  ioh->SizeOfHeapReserve = 1024 * 1024;
+  ioh->SizeOfHeapCommit = 4 * 1024;
+  ioh->LoaderFlags = 0;
+  ioh->NumberOfRvaAndSizes = 16;
+  ioh->DataDirectory[1].VirtualAddress = 0x5000;  // import table
+  ioh->DataDirectory[1].Size = 100;
+  ptr += sizeof(IMAGE_OPTIONAL_HEADER32);
 
-  std::strcpy(reinterpret_cast<char *>(sects[1].Name), ".idata");
-  sects[1].Misc.VirtualSize = 100;
-  sects[1].VirtualAddress = 0x5000;
-  sects[1].SizeOfRawData = 512;
-  sects[1].PointerToRawData = 0x200;
-  sects[1].Characteristics = 0xc0300040;
+  // .text section
+  IMAGE_SECTION_HEADER *ish = reinterpret_cast<IMAGE_SECTION_HEADER *>(ptr);
+  std::strcpy(reinterpret_cast<char *>(ish->Name), ".text");
+  ish->Misc.VirtualSize = static_cast<DWORD>(codeSize);
+  ish->VirtualAddress = 0x1000;
+  ish->SizeOfRawData = static_cast<DWORD>(codeSize);
+  ish->PointerToRawData = 0x400;
+  ish->Characteristics = 0x60500060;
+  ptr += sizeof(IMAGE_SECTION_HEADER);
 
-  std::strcpy(reinterpret_cast<char *>(sects[2].Name), ".bss");
-  sects[2].Misc.VirtualSize = 65536;
-  sects[2].VirtualAddress = 0x6000;
-  sects[2].Characteristics = 0xc0400080;
-  std::memcpy(ptr, sects, sizeof(sects));
+  // .idata section
+  ish = reinterpret_cast<IMAGE_SECTION_HEADER *>(ptr);
+  std::strcpy(reinterpret_cast<char *>(ish->Name), ".idata");
+  ish->Misc.VirtualSize = 100;
+  ish->VirtualAddress = 0x5000;
+  ish->SizeOfRawData = 512;
+  ish->PointerToRawData = 0x200;
+  ish->Characteristics = 0xc0300040;
+  ptr += sizeof(IMAGE_SECTION_HEADER);
+
+  // .bss section
+  ish = reinterpret_cast<IMAGE_SECTION_HEADER *>(ptr);
+  std::strcpy(reinterpret_cast<char *>(ish->Name), ".bss");
+  ish->Misc.VirtualSize = 65536;
+  ish->VirtualAddress = 0x6000;
+  ish->Characteristics = 0xc0400080;
 }
 
 
@@ -1058,33 +1071,50 @@ writePEHeader(unsigned char *binCode, std::size_t codeSize)
 inline static void
 writeIData(unsigned char *binCode)
 {
-  static const int IDT[] = {
-    // IDT 1
-    0x5028, 0, 0, 0x5034, 0x5044,
-    // IDT (End)
-    0, 0, 0, 0, 0
-  };
-  static const int ILT_IAT[] = {
-    0x5050, 0x505a, 0
-  };
-  unsigned char *ptr = binCode + 0x200;
-  short s = 0x0000;
+  static const char CRT_DLL[] = "msvcrt.dll\0\0\0\0\0";
+  static const char STR_PUTCHAR[] = "putchar";
+  static const char STR_GETCHAR[] = "getchar";
+  static const unsigned int PE_OFFSET = 0x200;
+  unsigned char *ptr = binCode + PE_OFFSET;
 
-  std::memcpy(ptr, IDT, sizeof(IDT));
-  ptr += sizeof(IDT);
-  std::memcpy(ptr, ILT_IAT, sizeof(ILT_IAT));
-  ptr += sizeof(ILT_IAT);
-  std::memcpy(ptr, "msvcrt.dll\0\0\0\0\0", 16);
-  ptr += 16;
-  std::memcpy(ptr, ILT_IAT, sizeof(ILT_IAT));
-  ptr += sizeof(ILT_IAT);
-  std::memcpy(ptr, &s, sizeof(s));
+  int *idt = reinterpret_cast<int *>(ptr);
+  // IDT 1
+  idt[0] = 0x5028;
+  idt[1] = 0;
+  idt[2] = 0;
+  idt[3] = 0x5034;
+  idt[4] = 0x5044;
+  // IDT (End)
+  idt[5] = 0;
+  idt[6] = 0;
+  idt[7] = 0;
+  idt[8] = 0;
+  idt[9] = 0;
+  ptr += sizeof(int) * 10;
+
+  int *ilt = reinterpret_cast<int *>(ptr);
+  ilt[0] = 0x5050;
+  ilt[1] = 0x505a;
+  ilt[2] = 0;
+  ptr += sizeof(int) * 3;
+
+  std::memcpy(ptr, CRT_DLL, sizeof(CRT_DLL));
+  ptr += sizeof(CRT_DLL);
+
+  int *iat = reinterpret_cast<int *>(ptr);
+  iat[0] = 0x5050;
+  iat[1] = 0x505a;
+  iat[2] = 0;
+  ptr += sizeof(int) * 3;
+
+  *reinterpret_cast<short *>(ptr) = 0x0000;
   ptr += sizeof(short);
-  std::memcpy(ptr, "putchar", 8);
-  ptr += 8;
-  std::memcpy(ptr, &s, sizeof(s));
+  std::memcpy(ptr, STR_PUTCHAR, sizeof(STR_PUTCHAR));
+  ptr += sizeof(STR_PUTCHAR);
+
+  *reinterpret_cast<short *>(ptr) = 0x0000;
   ptr += sizeof(short);
-  std::memcpy(ptr, "getchar", 8);
+  std::memcpy(ptr, STR_GETCHAR, sizeof(STR_GETCHAR));
 }
 
 
@@ -1097,9 +1127,10 @@ inline static void
 writeElfHeader(unsigned char *binCode, std::size_t codeSize)
 {
   static const uint64_t ADDR = 0x08048000;
+  unsigned char *ptr = binCode;
 
   // ELF header
-  Elf64_Ehdr *ehdr = reinterpret_cast<Elf64_Ehdr *>(binCode);
+  Elf64_Ehdr *ehdr = reinterpret_cast<Elf64_Ehdr *>(ptr);
   ehdr->e_ident[EI_MAG0] = ELFMAG0;
   ehdr->e_ident[EI_MAG1] = ELFMAG1;
   ehdr->e_ident[EI_MAG2] = ELFMAG2;
@@ -1123,9 +1154,10 @@ writeElfHeader(unsigned char *binCode, std::size_t codeSize)
   ehdr->e_shentsize = sizeof(Elf64_Shdr);
   ehdr->e_shnum = 4;
   ehdr->e_shstrndx = 1;
+  ptr += sizeof(Elf64_Ehdr);
 
   // Program header
-  Elf64_Phdr *phdr = reinterpret_cast<Elf64_Phdr *>(binCode + sizeof(Elf64_Ehdr));
+  Elf64_Phdr *phdr = reinterpret_cast<Elf64_Phdr *>(ptr);
   phdr->p_type = PT_LOAD;
   phdr->p_flags = PF_R | PF_X;
   phdr->p_offset = 0x0000000000000000;
@@ -1134,9 +1166,10 @@ writeElfHeader(unsigned char *binCode, std::size_t codeSize)
   phdr->p_filesz = sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * 2 + codeSize + 22 + sizeof(Elf64_Shdr) * 4;
   phdr->p_memsz = sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * 2 + codeSize + 22 + sizeof(Elf64_Shdr) * 4;
   phdr->p_align = 0x0000000000000100;
+  ptr += sizeof(Elf64_Phdr);
 
   // program header for .bss (56 bytes)
-  phdr = reinterpret_cast<Elf64_Phdr *>(binCode + sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr));
+  phdr = reinterpret_cast<Elf64_Phdr *>(ptr);
   phdr->p_type = PT_LOAD;
   phdr->p_flags = PF_R | PF_W;
   phdr->p_offset = 0x0000000000001000;
@@ -1158,13 +1191,15 @@ writeElfFooter(unsigned char *binCode, std::size_t codeSize)
 {
   static const uint64_t ADDR = 0x08048000;
   static const char SHSTRTBL[] = "\0.text\0.shstrtbl\0.bss";
+  unsigned char *ptr = binCode + sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * 2 + codeSize;
 
   // section string table (22bytes)
-  std::memcpy(binCode, SHSTRTBL, sizeof(SHSTRTBL));
+  std::memcpy(ptr, SHSTRTBL, sizeof(SHSTRTBL));
+  ptr += sizeof(SHSTRTBL);
 
   // section header
   // first section header
-  Elf64_Shdr *shdr = reinterpret_cast<Elf64_Shdr *>(binCode + sizeof(SHSTRTBL));
+  Elf64_Shdr *shdr = reinterpret_cast<Elf64_Shdr *>(ptr);
   shdr->sh_name = 0;
   shdr->sh_type = SHT_NULL;
   shdr->sh_flags = 0x0000000000000000;
@@ -1175,9 +1210,10 @@ writeElfFooter(unsigned char *binCode, std::size_t codeSize)
   shdr->sh_info = 0x00000000;
   shdr->sh_addralign = 0x0000000000000000;
   shdr->sh_entsize = 0x0000000000000000;
+  ptr += sizeof(Elf64_Shdr);
 
   // second section header (.shstrtbl)
-  shdr = reinterpret_cast<Elf64_Shdr *>(binCode + sizeof(SHSTRTBL) + sizeof(Elf64_Shdr));
+  shdr = reinterpret_cast<Elf64_Shdr *>(ptr);
   shdr->sh_name = 7;
   shdr->sh_type = SHT_STRTAB;
   shdr->sh_flags = 0x0000000000000000;
@@ -1188,9 +1224,10 @@ writeElfFooter(unsigned char *binCode, std::size_t codeSize)
   shdr->sh_info = 0x00000000;
   shdr->sh_addralign = 0x0000000000000001;
   shdr->sh_entsize = 0x0000000000000000;
+  ptr += sizeof(Elf64_Shdr);
 
   // third section header (.text)
-  shdr = reinterpret_cast<Elf64_Shdr *>(binCode + sizeof(SHSTRTBL) + sizeof(Elf64_Shdr) * 2);
+  shdr = reinterpret_cast<Elf64_Shdr *>(ptr);
   shdr->sh_name = 1;
   shdr->sh_type = SHT_PROGBITS;
   shdr->sh_flags = SHF_EXECINSTR | SHF_ALLOC;
@@ -1201,9 +1238,10 @@ writeElfFooter(unsigned char *binCode, std::size_t codeSize)
   shdr->sh_info = 0x00000000;
   shdr->sh_addralign = 0x0000000000000004;
   shdr->sh_entsize = 0x0000000000000000;
+  ptr += sizeof(Elf64_Shdr);
 
   // fourth section header (.bss)
-  shdr = reinterpret_cast<Elf64_Shdr *>(binCode + sizeof(SHSTRTBL) + sizeof(Elf64_Shdr) * 3);
+  shdr = reinterpret_cast<Elf64_Shdr *>(ptr);
   shdr->sh_name = 17;
   shdr->sh_type = SHT_NOBITS;
   shdr->sh_flags = SHF_ALLOC | SHF_WRITE;
