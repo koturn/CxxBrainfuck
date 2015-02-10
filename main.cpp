@@ -41,7 +41,7 @@ private:
 };
 
 static bool
-convertTarget(Brainfuck::LANG *lang, char *target);
+convertTarget(bf::Brainfuck::LANG *lang, char *target);
 
 static void
 toLowerCase(char *str);
@@ -69,25 +69,25 @@ main(int argc, char *argv[])
     if (status == OptionParser::STATUS_EXIT) return EXIT_SUCCESS;
     if (status == OptionParser::STATUS_ERROR) return EXIT_FAILURE;
 
-    Brainfuck bf(op.getMemorySize());
+    bf::Brainfuck bf(op.getMemorySize());
     bf.load(op.getInFilename());
     bf.trim();
 
     int optLevel = op.getOptLevel();
 #ifdef USE_XBYAK
     if (optLevel >= 2) {
-      bf.compile(Brainfuck::XBYAK_JIT_COMPILE);
+      bf.compile(bf::Brainfuck::XBYAK_JIT_COMPILE);
     } else if (optLevel == 1) {
-      bf.compile(Brainfuck::NORMAL_COMPILE);
+      bf.compile(bf::Brainfuck::NORMAL_COMPILE);
     }
 #else
     if (optLevel >= 1) {
-      bf.compile(Brainfuck::NORMAL_COMPILE);
+      bf.compile(bf::Brainfuck::NORMAL_COMPILE);
     }
 #endif
 
     char *target = const_cast<char *>(op.getTarget());
-    Brainfuck::LANG lang;
+    bf::Brainfuck::LANG lang;
     if (target == NULL) {
       bf.execute();
     } else if (convertTarget(&lang, target)) {
@@ -99,9 +99,9 @@ main(int argc, char *argv[])
       }
 #endif
       if (!std::strcmp(target, "winx86")) {
-        bf.generateWinBinary(Brainfuck::WIN_BIN_X86);
+        bf.generateWinBinary(bf::Brainfuck::WIN_BIN_X86);
       } else if (!std::strcmp(target, "elfx64")) {
-        bf.generateWinBinary(Brainfuck::ELF_BIN_X64);
+        bf.generateWinBinary(bf::Brainfuck::ELF_BIN_X64);
       }
       std::ofstream fout(DEFAULT_OUTPUT_FILE_NAME, std::ios::out | std::ios::binary | std::ios::trunc);
       if (!fout) {
@@ -224,23 +224,23 @@ OptionParser::help(void) const
  *         false
  */
 static bool
-convertTarget(Brainfuck::LANG *lang, char *target)
+convertTarget(bf::Brainfuck::LANG *lang, char *target)
 {
   toLowerCase(target);
   if (!std::strcmp(target, "c")) {
-    *lang = Brainfuck::LANG_C;
+    *lang = bf::Brainfuck::LANG_C;
   } else if (!std::strcmp(target, "cpp")) {
-    *lang = Brainfuck::LANG_CPP;
+    *lang = bf::Brainfuck::LANG_CPP;
   } else if (!std::strcmp(target, "csharp")) {
-    *lang = Brainfuck::LANG_CSHARP;
+    *lang = bf::Brainfuck::LANG_CSHARP;
   } else if (!std::strcmp(target, "java")) {
-    *lang = Brainfuck::LANG_JAVA;
+    *lang = bf::Brainfuck::LANG_JAVA;
   } else if (!std::strcmp(target, "lua")) {
-    *lang = Brainfuck::LANG_LUA;
+    *lang = bf::Brainfuck::LANG_LUA;
   } else if (!std::strcmp(target, "ruby")) {
-    *lang = Brainfuck::LANG_RUBY;
+    *lang = bf::Brainfuck::LANG_RUBY;
   } else if (!std::strcmp(target, "python")) {
-    *lang = Brainfuck::LANG_PYTHON;
+    *lang = bf::Brainfuck::LANG_PYTHON;
   } else {
     return false;
   }

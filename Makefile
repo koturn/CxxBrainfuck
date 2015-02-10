@@ -25,7 +25,7 @@ C_WARNING_FLAGS := -Wall -Wextra -Wformat=2 -Wstrict-aliasing=2 \
                    -Wcast-align -Wcast-qual -Wconversion \
                    -Wfloat-equal -Wpointer-arith -Wswitch-enum \
                    -Wwrite-strings -pedantic
-CXX_WARNING_FLAGS := $(C_WARNING_FLAGS) -Woverloaded-virtual
+# CXX_WARNING_FLAGS := $(C_WARNING_FLAGS) -Woverloaded-virtual
 
 CXX      := g++
 MAKE     := make
@@ -38,20 +38,36 @@ LDFLAGS  := -pipe $(LDOPTFLAGS)
 TARGET   := brainfuck
 MAIN_OBJ := main.o
 OBJ1     := Brainfuck.o
+OBJ2     := BfIRCompiler.o
+OBJ3     := BfJitCompiler.o
 MAIN_SRC := $(MAIN_SRC:%.o=%.cpp)
 SRC1     := $(OBJ1:%.o=%.cpp)
+SRC2     := $(OBJ2:%.o=%.cpp)
+SRC3     := $(OBJ3:%.o=%.cpp)
 HEADER1  := $(OBJ1:%.o=%.h)
-HEADER2  := CodeGenerator/CodeGenerator.h
-HEADER3  := CodeGenerator/_AllGenerator.h
-HEADER4  := winsubset.h
-GENERATORS := $(addprefix CodeGenerator/Lang/, \
-                  GeneratorC.h \
-                  GeneratorCpp.h \
-                  GeneratorCSharp.h \
-                  GeneratorJava.h \
-                  GeneratorLua.h \
-                  GeneratorPython.h \
-                  GeneratorRuby.h)
+HEADER2  := $(OBJ2:%.o=%.h)
+HEADER3  := $(OBJ3:%.o=%.h)
+GENERATORS := $(addprefix CodeGenerator/, \
+                  CodeGenerator.h \
+                  _AllGenerator.h \
+                  $(addprefix SourceGenerator/, \
+                      SourceGenerator.h \
+                      $(addprefix Lang/, \
+                          GeneratorC.h \
+                          GeneratorCpp.h \
+                          GeneratorCSharp.h \
+                          GeneratorJava.h \
+                          GeneratorLua.h \
+                          GeneratorPython.h \
+                          GeneratorRuby.h)) \
+                  $(addprefix BinaryGenerator/, \
+                      BinaryGenerator.h \
+                      $(addprefix Arch/, \
+                          GeneratorWinX86.h \
+                          GeneratorElfX64.h \
+                          winsubset.h \
+                          elfsubset.h)))
+
 
 ifeq ($(OS),Windows_NT)
     TARGET := $(addsuffix .exe, $(TARGET))
@@ -68,15 +84,23 @@ endif
 .PHONY: all
 all: $(XBYAK_DIR)/xbyak/xbyak.h $(TARGET)
 
-$(TARGET): $(MAIN_OBJ) $(OBJ1)
+$(TARGET): $(MAIN_OBJ) $(OBJ1) $(OBJ2) $(OBJ3)
 
 $(MAIN_OBJ): $(MAIN_SRC)
 
-$(MAIN_SRC): $(HEADER1) $(HEADER2)
+$(MAIN_SRC): $(HEADER1)
 
 $(OBJ1): $(SRC1)
 
-$(SRC1): $(HEADER1) $(HEADER2) $(HEADER3) $(GENERATORS) $(HEADER4)
+$(OBJ2): $(SRC2)
+
+$(OBJ3): $(SRC3)
+
+$(SRC1): $(HEADER1) $(HEADER2) $(HEADER3) $(GENERATORS)
+
+$(SRC2): $(HEADER2)
+
+$(SRC3): $(HEADER3)
 
 
 $(XBYAK_DIR)/xbyak/xbyak.h:
@@ -92,7 +116,7 @@ test:
 
 .PHONY: clean
 clean:
-	$(RM) $(TARGET) $(MAIN_OBJ) $(OBJ1)
+	$(RM) $(TARGET) $(MAIN_OBJ) $(OBJ1) $(OBJ2) $(OBJ3)
 .PHONY: cleanobj
 cleanobj:
-	$(RM) $(MAIN_OBJ) $(OBJ1)
+	$(RM) $(MAIN_OBJ) $(OBJ1) $(OBJ2) $(OBJ3)

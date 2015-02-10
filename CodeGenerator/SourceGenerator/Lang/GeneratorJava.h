@@ -1,44 +1,48 @@
-#ifndef GENERATOR_JAVA
-#define GENERATOR_JAVA
+#ifndef GENERATOR_JAVA_H
+#define GENERATOR_JAVA_H
 
 
-#include "../CodeGenerator.h"
+#include "../SourceGenerator.h"
 
 
-class GeneratorJava : public CodeGenerator {
+namespace bf {
+
+
+class GeneratorJava : public SourceGenerator {
+protected:
+  inline void genHeader(void);
+  inline void genFooter(void);
+  inline void genPtrAdd(unsigned int value);
+  inline void genPtrSub(unsigned int value);
+  inline void genAdd(unsigned int value);
+  inline void genSub(unsigned int value);
+  inline void genPutchar(void);
+  inline void genGetchar(void);
+  inline void genLoopStart(void);
+  inline void genLoopEnd(void);
+  inline void genAssignZero(void);
 public:
-  GeneratorJava(const char *indent="    ") :
-    CodeGenerator(indent) {}
-  inline void printHeader(void);
-  inline void printFooter(void);
-  inline void printPtrAdd(unsigned int value);
-  inline void printPtrSub(unsigned int value);
-  inline void printAdd(unsigned int value);
-  inline void printSub(unsigned int value);
-  inline void printPutchar(void);
-  inline void printGetchar(void);
-  inline void printLoopStart(void);
-  inline void printLoopEnd(void);
-  inline void printAssignZero(void);
+  GeneratorJava(BfIR irCode, std::size_t codeSize=DEFAULT_MAX_CODE_SIZE,
+      const char *indent="  ") :
+    SourceGenerator(irCode, indent, 1) {}
 };
 
 
 
 
 inline void
-GeneratorJava::printHeader(void)
+GeneratorJava::genHeader(void)
 {
   std::cout << "public class TranslatedBrainfuck {\n"
             << indent << "public static void main(String[] args) {\n"
             << indent << indent << "final int MEMORY_SIZE = 65536;\n"
             << indent << indent << "char[] memory = new char[MEMORY_SIZE];\n"
             << indent << indent << "int idx = 0;\n\n";
-  indentLevel = 2;
 }
 
 
 inline void
-GeneratorJava::printFooter(void)
+GeneratorJava::genFooter(void)
 {
   std::cout << indent << "}\n"
                "}"
@@ -47,22 +51,22 @@ GeneratorJava::printFooter(void)
 
 
 inline void
-GeneratorJava::printPtrAdd(unsigned int value)
+GeneratorJava::genPtrAdd(unsigned int value)
 {
-  printIndent();
+  genIndent();
   if (value == 1) {
     std::cout << "idx++;\n";
   } else {
-    printIndent();
+    genIndent();
     std::cout << "idx += " << value << ";\n";
   }
 }
 
 
 inline void
-GeneratorJava::printPtrSub(unsigned int value)
+GeneratorJava::genPtrSub(unsigned int value)
 {
-  printIndent();
+  genIndent();
   if (value == 1) {
     std::cout << "idx--;\n";
   } else {
@@ -72,9 +76,9 @@ GeneratorJava::printPtrSub(unsigned int value)
 
 
 inline void
-GeneratorJava::printAdd(unsigned int value)
+GeneratorJava::genAdd(unsigned int value)
 {
-  printIndent();
+  genIndent();
   if (value == 1) {
     std::cout << "memory[idx]++;\n";
   } else {
@@ -84,9 +88,9 @@ GeneratorJava::printAdd(unsigned int value)
 
 
 inline void
-GeneratorJava::printSub(unsigned int value)
+GeneratorJava::genSub(unsigned int value)
 {
-  printIndent();
+  genIndent();
   if (value == 1) {
     std::cout << "memory[idx]--;\n";
   } else {
@@ -96,45 +100,46 @@ GeneratorJava::printSub(unsigned int value)
 
 
 inline void
-GeneratorJava::printPutchar(void)
+GeneratorJava::genPutchar(void)
 {
-  printIndent();
+  genIndent();
   std::cout << "System.out.print(memory[idx]);\n";
 }
 
 
 inline void
-GeneratorJava::printGetchar(void)
+GeneratorJava::genGetchar(void)
 {
-  printIndent();
+  genIndent();
   std::cout << "memory[idx] = System.in.read();\n";
 }
 
 
 inline void
-GeneratorJava::printLoopStart(void)
+GeneratorJava::genLoopStart(void)
 {
-  printIndent();
+  genIndent();
   std::cout << "while (memory[idx] != 0) {\n";
   indentLevel++;
 }
 
 
 inline void
-GeneratorJava::printLoopEnd(void)
+GeneratorJava::genLoopEnd(void)
 {
   indentLevel--;
-  printIndent();
+  genIndent();
   std::cout << "}\n";
 }
 
 
 inline void
-GeneratorJava::printAssignZero(void)
+GeneratorJava::genAssignZero(void)
 {
-  printIndent();
+  genIndent();
   std::cout << "memory[idx] = 0;\n";
 }
 
 
-#endif  // GENERATOR_JAVA
+}  // namespace bf
+#endif  // GENERATOR_JAVA_H

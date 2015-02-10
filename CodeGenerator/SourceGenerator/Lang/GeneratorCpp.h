@@ -1,32 +1,37 @@
-#ifndef GENERATOR_CPP
-#define GENERATOR_CPP
+#ifndef GENERATOR_CPP_H
+#define GENERATOR_CPP_H
 
 
-#include "../CodeGenerator.h"
+#include "../SourceGenerator.h"
 
 
-class GeneratorCpp : public CodeGenerator {
+namespace bf {
+
+
+class GeneratorCpp : public SourceGenerator {
+private:
+  inline void genHeader(void);
+  inline void genFooter(void);
+  inline void genPtrAdd(unsigned int value);
+  inline void genPtrSub(unsigned int value);
+  inline void genAdd(unsigned int value);
+  inline void genSub(unsigned int value);
+  inline void genPutchar(void);
+  inline void genGetchar(void);
+  inline void genLoopStart(void);
+  inline void genLoopEnd(void);
+  inline void genAssignZero(void);
 public:
-  GeneratorCpp(const char *indent="  ") :
-    CodeGenerator(indent) {}
-  inline void printHeader(void);
-  inline void printFooter(void);
-  inline void printPtrAdd(unsigned int value);
-  inline void printPtrSub(unsigned int value);
-  inline void printAdd(unsigned int value);
-  inline void printSub(unsigned int value);
-  inline void printPutchar(void);
-  inline void printGetchar(void);
-  inline void printLoopStart(void);
-  inline void printLoopEnd(void);
-  inline void printAssignZero(void);
+  GeneratorCpp(BfIR irCode, std::size_t codeSize=DEFAULT_MAX_CODE_SIZE,
+      const char *indent="  ") :
+    SourceGenerator(irCode, indent, 1) {}
 };
 
 
 
 
 inline void
-GeneratorCpp::printHeader(void)
+GeneratorCpp::genHeader(void)
 {
   std::cout << "#include <cstdlib>\n"
                "#include <iostream>\n"
@@ -41,10 +46,10 @@ GeneratorCpp::printHeader(void)
 
 
 inline void
-GeneratorCpp::printFooter(void)
+GeneratorCpp::genFooter(void)
 {
   std::cout << "\n";
-  printIndent();
+  genIndent();
   std::cout << "return EXIT_SUCCESS;\n"
                "}"
             << std::endl;
@@ -52,28 +57,28 @@ GeneratorCpp::printFooter(void)
 
 
 inline void
-GeneratorCpp::printPtrAdd(unsigned int value)
+GeneratorCpp::genPtrAdd(unsigned int value)
 {
-  printIndent();
+  genIndent();
   if (value == 1) {
     std::cout << "idx++;\n";
   } else {
-    printIndent();
+    genIndent();
     std::cout << "idx += " << value << ";\n";
   }
-  printIndent();
+  genIndent();
   std::cout << "while (idx >= memory.size()) {\n";
-  printIndent();
+  genIndent();
   std::cout << indent << "memory.resize(memory.size() * 2);\n";
-  printIndent();
+  genIndent();
   std::cout << "}\n";
 }
 
 
 inline void
-GeneratorCpp::printPtrSub(unsigned int value)
+GeneratorCpp::genPtrSub(unsigned int value)
 {
-  printIndent();
+  genIndent();
   if (value == 1) {
     std::cout << "idx--;\n";
   } else {
@@ -83,9 +88,9 @@ GeneratorCpp::printPtrSub(unsigned int value)
 
 
 inline void
-GeneratorCpp::printAdd(unsigned int value)
+GeneratorCpp::genAdd(unsigned int value)
 {
-  printIndent();
+  genIndent();
   if (value == 1) {
     std::cout << "memory[idx]++;\n";
   } else {
@@ -95,9 +100,9 @@ GeneratorCpp::printAdd(unsigned int value)
 
 
 inline void
-GeneratorCpp::printSub(unsigned int value)
+GeneratorCpp::genSub(unsigned int value)
 {
-  printIndent();
+  genIndent();
   if (value == 1) {
     std::cout << "memory[idx]--;\n";
   } else {
@@ -107,45 +112,46 @@ GeneratorCpp::printSub(unsigned int value)
 
 
 inline void
-GeneratorCpp::printPutchar(void)
+GeneratorCpp::genPutchar(void)
 {
-  printIndent();
+  genIndent();
   std::cout << "std::cout.put(memory[idx]);\n";
 }
 
 
 inline void
-GeneratorCpp::printGetchar(void)
+GeneratorCpp::genGetchar(void)
 {
-  printIndent();
+  genIndent();
   std::cout << "memory[idx] = static_cast<unsigned char>(std::cin.get());\n";
 }
 
 
 inline void
-GeneratorCpp::printLoopStart(void)
+GeneratorCpp::genLoopStart(void)
 {
-  printIndent();
+  genIndent();
   std::cout << "while (memory[idx]) {\n";
   indentLevel++;
 }
 
 
 inline void
-GeneratorCpp::printLoopEnd(void)
+GeneratorCpp::genLoopEnd(void)
 {
   indentLevel--;
-  printIndent();
+  genIndent();
   std::cout << "}\n";
 }
 
 
 inline void
-GeneratorCpp::printAssignZero(void)
+GeneratorCpp::genAssignZero(void)
 {
-  printIndent();
+  genIndent();
   std::cout << "*ptr = 0;\n";
 }
 
 
-#endif  // GENERATOR_CPP
+}  // namespace bf
+#endif  // GENERATOR_CPP_H

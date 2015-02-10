@@ -1,32 +1,37 @@
-#ifndef GENERATOR_C
-#define GENERATOR_C
+#ifndef GENERATOR_C_H
+#define GENERATOR_C_H
 
 
-#include "../CodeGenerator.h"
+#include "../SourceGenerator.h"
 
 
-class GeneratorC : public CodeGenerator {
+namespace bf {
+
+
+class GeneratorC : public SourceGenerator {
+private:
+  inline void genHeader(void);
+  inline void genFooter(void);
+  inline void genPtrAdd(unsigned int value);
+  inline void genPtrSub(unsigned int value);
+  inline void genAdd(unsigned int value);
+  inline void genSub(unsigned int value);
+  inline void genPutchar(void);
+  inline void genGetchar(void);
+  inline void genLoopStart(void);
+  inline void genLoopEnd(void);
+  inline void genAssignZero(void);
 public:
-  GeneratorC(const char *indent="  ") :
-    CodeGenerator(indent) {}
-  inline void printHeader(void);
-  inline void printFooter(void);
-  inline void printPtrAdd(unsigned int value);
-  inline void printPtrSub(unsigned int value);
-  inline void printAdd(unsigned int value);
-  inline void printSub(unsigned int value);
-  inline void printPutchar(void);
-  inline void printGetchar(void);
-  inline void printLoopStart(void);
-  inline void printLoopEnd(void);
-  inline void printAssignZero(void);
+  GeneratorC(BfIR irCode, std::size_t codeSize=DEFAULT_MAX_CODE_SIZE,
+      const char *indent="  ") :
+    SourceGenerator(irCode, indent, 1) {}
 };
 
 
 
 
 inline void
-GeneratorC::printHeader(void)
+GeneratorC::genHeader(void)
 {
   std::cout << "#include <stdio.h>\n"
                "#include <stdlib.h>\n\n"
@@ -40,7 +45,7 @@ GeneratorC::printHeader(void)
 
 
 inline void
-GeneratorC::printFooter(void)
+GeneratorC::genFooter(void)
 {
   std::cout << "\n";
   std::cout << indent << "return EXIT_SUCCESS;\n"
@@ -50,9 +55,9 @@ GeneratorC::printFooter(void)
 
 
 inline void
-GeneratorC::printPtrAdd(unsigned int value)
+GeneratorC::genPtrAdd(unsigned int value)
 {
-  printIndent();
+  genIndent();
   if (value == 1) {
     std::cout << "ptr++;\n";
   } else {
@@ -62,9 +67,9 @@ GeneratorC::printPtrAdd(unsigned int value)
 
 
 inline void
-GeneratorC::printPtrSub(unsigned int value)
+GeneratorC::genPtrSub(unsigned int value)
 {
-  printIndent();
+  genIndent();
   if (value == 1) {
     std::cout << "ptr--;\n";
   } else {
@@ -74,9 +79,9 @@ GeneratorC::printPtrSub(unsigned int value)
 
 
 inline void
-GeneratorC::printAdd(unsigned int value)
+GeneratorC::genAdd(unsigned int value)
 {
-  printIndent();
+  genIndent();
   if (value == 1) {
     std::cout << "(*ptr)++;\n";
   } else {
@@ -86,9 +91,9 @@ GeneratorC::printAdd(unsigned int value)
 
 
 inline void
-GeneratorC::printSub(unsigned int value)
+GeneratorC::genSub(unsigned int value)
 {
-  printIndent();
+  genIndent();
   if (value == 1) {
     std::cout << "(*ptr)--;\n";
   } else {
@@ -98,45 +103,46 @@ GeneratorC::printSub(unsigned int value)
 
 
 inline void
-GeneratorC::printPutchar(void)
+GeneratorC::genPutchar(void)
 {
-  printIndent();
+  genIndent();
   std::cout << "putchar(*ptr);\n";
 }
 
 
 inline void
-GeneratorC::printGetchar(void)
+GeneratorC::genGetchar(void)
 {
-  printIndent();
+  genIndent();
   std::cout << "*ptr = (unsigned char) getchar();";
 }
 
 
 inline void
-GeneratorC::printLoopStart(void)
+GeneratorC::genLoopStart(void)
 {
-  printIndent();
+  genIndent();
   std::cout << "while (*ptr) {\n";
   indentLevel++;
 }
 
 
 inline void
-GeneratorC::printLoopEnd(void)
+GeneratorC::genLoopEnd(void)
 {
   indentLevel--;
-  printIndent();
+  genIndent();
   std::cout << "}\n";
 }
 
 
 inline void
-GeneratorC::printAssignZero(void)
+GeneratorC::genAssignZero(void)
 {
-  printIndent();
+  genIndent();
   std::cout << "*ptr = 0;\n";
 }
 
 
-#endif  // GENERATOR_C
+}  // namespace bf
+#endif  // GENERATOR_C_H

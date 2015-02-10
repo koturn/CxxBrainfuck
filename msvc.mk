@@ -48,20 +48,36 @@ LDLIBS   = /link $(GETOPT_LDLIBS)
 TARGET   = brainfuck.exe
 MAIN_OBJ = main.obj
 OBJ1     = brainfuck.obj
+OBJ2     = BfIRCompiler.obj
+OBJ3     = BfJitCompiler.obj
 MAIN_SRC = $(MAIN_OBJ:.obj=.cpp)
 SRC1     = $(OBJ1:.obj=.cpp)
+SRC2     = $(OBJ2:.obj=.cpp)
+SRC3     = $(OBJ3:.obj=.cpp)
 HEADER1  = $(OBJ1:.obj=.h)
-HEADER2  = CodeGenerator/CodeGenerator.h
-HEADER3  = CodeGenerator/_AllGenerator.h
-HEADER4  = winsubset.h
-GENERATORS_DIR = CodeGenerator/Lang
-GENERATORS = $(GENERATORS_DIR)/GeneratorC.h \
-             $(GENERATORS_DIR)/GeneratorCpp.h \
-             $(GENERATORS_DIR)/GeneratorCSharp.h \
-             $(GENERATORS_DIR)/GeneratorJava.h \
-             $(GENERATORS_DIR)/GeneratorLua.h \
-             $(GENERATORS_DIR)/GeneratorPython.h \
-             $(GENERATORS_DIR)/GeneratorRuby.h
+HEADER2  = $(OBJ2:.obj=.h)
+HEADER3  = $(OBJ3:.obj=.h)
+
+GENERATOR_DIR      = CodeGenerator
+SRC_GENERATOR_DIR  = $(GENERATOR_DIR)/SourceGenerator
+LANG_GENERATOR_DIR = $(SRC_GENERATOR_DIR)/Lang
+BIN_GENERATOR_DIR  = $(GENERATOR_DIR)/BinaryGenerator
+ARCH_GENERATOR_DIR = $(BIN_GENERATOR_DIR)/Arch
+GENERATORS = $(GENERATOR_DIR)/CodeGenerator.h \
+             $(GENERATOR_DIR)/_AllGenerator.h \
+             $(SRC_GENERATOR_DIR)/SourceGenerator.h \
+             $(LANG_GENERATOR_DIR)/GeneratorC.h \
+             $(LANG_GENERATOR_DIR)/GeneratorCpp.h \
+             $(LANG_GENERATOR_DIR)/GeneratorCSharp.h \
+             $(LANG_GENERATOR_DIR)/GeneratorJava.h \
+             $(LANG_GENERATOR_DIR)/GeneratorLua.h \
+             $(LANG_GENERATOR_DIR)/GeneratorPython.h \
+             $(LANG_GENERATOR_DIR)/GeneratorRuby.h \
+             $(BIN_GENERATOR_DIR)/BinaryGenerator.h \
+             $(ARCH_GENERATOR_DIR)/GeneratorWinX86.h \
+             $(ARCH_GENERATOR_DIR)/GeneratorElfX64.h \
+             $(ARCH_GENERATOR_DIR)/winsubset.h \
+             $(ARCH_GENERATOR_DIR)/elfsubset.h
 
 
 .SUFFIXES: .cpp .obj .exe
@@ -73,15 +89,19 @@ GENERATORS = $(GENERATORS_DIR)/GeneratorC.h \
 
 all: $(GETOPT_LIBS_DIR)/$(GETOPT_LIB) $(XBYAK_DIR)/xbyak/xbyak.h $(MSVCDBG_DIR)/NUL $(TARGET)
 
-$(TARGET): $(MAIN_OBJ) $(OBJ1)
+$(TARGET): $(MAIN_OBJ) $(OBJ1) $(OBJ2) $(OBJ3)
 
 $(MAIN_OBJ): $(MAIN_SRC)
 
-$(MAIN_SRC): $(HEADER1) $(HEADER2)
+$(MAIN_SRC): $(HEADER1)
 
 $(OBJ1): $(SRC1)
 
-$(SRC1): $(HEADER1) $(HEADER2) $(HEADER3) $(GENERATORS) $(HEADER4)
+$(SRC1): $(HEADER1) $(HEADER2) $(HEADER3) $(GENERATORS)
+
+$(SRC2): $(HEADER2)
+
+$(SRC3): $(HEADER3)
 
 
 $(XBYAK_DIR)/xbyak/xbyak.h:
@@ -103,6 +123,6 @@ test:
 
 
 clean:
-	$(RM) $(TARGET) $(MAIN_OBJ) $(OBJ1) *.ilk *.pdb
+	$(RM) $(TARGET) $(MAIN_OBJ) $(OBJ1) $(OBJ2) $(OBJ3) *.ilk *.pdb
 cleanobj:
-	$(RM) $(MAIN_OBJ) $(OBJ1) *.ilk *.pdb
+	$(RM) $(MAIN_OBJ) $(OBJ1) $(OBJ2) $(OBJ3) *.ilk *.pdb

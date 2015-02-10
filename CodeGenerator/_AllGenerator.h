@@ -1,15 +1,17 @@
-#ifndef GENERATORS_H
-#define GENERATORS_H
+#ifndef ALL_GENERATOR_H
+#define ALL_GENERATOR_H
 
 
-#include "Lang/GeneratorC.h"
-#include "Lang/GeneratorCpp.h"
-#include "Lang/GeneratorCSharp.h"
-#include "Lang/GeneratorJava.h"
-#include "Lang/GeneratorLua.h"
-#include "Lang/GeneratorPython.h"
-#include "Lang/GeneratorRuby.h"
+#include "SourceGenerator/Lang/GeneratorC.h"
+#include "SourceGenerator/Lang/GeneratorCpp.h"
+#include "SourceGenerator/Lang/GeneratorCSharp.h"
+#include "SourceGenerator/Lang/GeneratorJava.h"
+#include "SourceGenerator/Lang/GeneratorLua.h"
+#include "SourceGenerator/Lang/GeneratorPython.h"
+#include "SourceGenerator/Lang/GeneratorRuby.h"
+#include "BinaryGenerator/Arch/GeneratorElfX64.h"
+#include "BinaryGenerator/Arch/GeneratorWinX86.h"
 
 
 
-#endif  // GENERATORS_H
+#endif  // ALL_GENERATOR_H

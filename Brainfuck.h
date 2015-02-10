@@ -11,7 +11,12 @@
 #  include <xbyak/xbyak.h>
 #endif  // USE_XBYAK
 
+#include "BfIRCompiler.h"
+#include "BfJitCompiler.h"
 #include "CodeGenerator/CodeGenerator.h"
+
+
+namespace bf {
 
 
 class Brainfuck {
@@ -42,7 +47,7 @@ public:
     memorySize(memorySize), sourceBuffer(NULL), compileType(NO_COMPILE)
     , binCode(NULL), binCodeSize(0)
 #ifdef USE_XBYAK
-    , generator(GENERATOR_SIZE), xbyakRtStackSize(XBYAK_RT_STACK_SIZE), xbyakRtStack(NULL)
+    , xbyakRtStackSize(XBYAK_RT_STACK_SIZE)
 #endif  // USE_XBYAK
     {}
   ~Brainfuck(void);
@@ -60,31 +65,17 @@ public:
 #endif  // USE_XBYAK
 
 private:
-  typedef enum {
-    PTR_ADD, PTR_SUB,
-    ADD, SUB,
-    PUTCHAR, GETCHAR,
-    LOOP_START, LOOP_END,
-    ASSIGN_ZERO
-  } Instruction;
-
-  struct Command {
-    Instruction  type;
-    unsigned int value;
-  };
-
   std::size_t memorySize;
   char *sourceBuffer;
-  std::vector<Command> commands;
   CompileType compileType;
   unsigned char *binCode;
   std::size_t binCodeSize;
+
+  BfIRCompiler  irCompiler;
+  BfJitCompiler jitCompiler;
 #ifdef USE_XBYAK
-  static const unsigned int GENERATOR_SIZE = 100000;
   static const unsigned int XBYAK_RT_STACK_SIZE = 128 * 1024;
-  Xbyak::CodeGenerator generator;
   std::size_t xbyakRtStackSize;
-  int *xbyakRtStack;
 #endif  // USE_XBYAK
 
   void normalCompile(void);
@@ -93,8 +84,6 @@ private:
 
   template<class TCodeGenerator>
     void generateCode(TCodeGenerator &cg);
-  void generateX86WinBinary(void);
-  void generateX64ElfBinary(void);
 #ifdef USE_XBYAK
   void xbyakJitCompile(void);
   void xbyakJitExecute(void);
@@ -124,4 +113,5 @@ Brainfuck::getWinBinarySize(void) const
 }
 
 
+}  // namespace bf
 #endif  // BRAINFUCK_H

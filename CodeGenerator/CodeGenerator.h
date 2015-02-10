@@ -1,55 +1,70 @@
-#ifndef CODE_GENERATOR
-#define CODE_GENERATOR
+/*!
+ * @file CodeGenerator.h
+ * @brief Super class for source code generator and binary generator
+ * @author koturn
+ */
+#ifndef CODE_GENERATOR_H
+#define CODE_GENERATOR_H
 
-#ifndef __UNUSED__
-#  if defined(__GNUC__)
-#    define __UNUSED__(x)  __UNUSED___ ## x __attribute__((unused))
-#  elif defined(_MSC_VER)
-#    define __UNUSED__(x)  __pragma(warning(suppress: 4100)) x
-#  elif defined(__LCLINT__)
-#    define __UNUSED__(x)  /*@unused@*/ x
-#  elif defined(__cplusplus)
-#    define __UNUSED__(x)
-#  else
-#    define __UNUSED__(x)  x
-#  endif
-#endif
+#include <cstdlib>
+#include "../BfIRCompiler.h"
 
 
+namespace bf {
+
+
+/*!
+ * @brief Super class for source code generator and binary generator
+ */
 class CodeGenerator {
+private:
+  static const std::size_t DEFAULT_MAX_CODE_SIZE = 1048576;
 protected:
-  int indentLevel;
-  const char *indent;
-
-  inline void printIndent(void);
-public:
-  CodeGenerator(const char *indent="  ") :
-    indentLevel(1), indent(indent) {}
-  virtual void printHeader(void) {}
-  virtual void printFooter(void) {}
-  virtual void printPtrAdd(unsigned int __UNUSED__(value)) {}
-  virtual void printPtrSub(unsigned int __UNUSED__(value)) {}
-  virtual void printAdd(unsigned int __UNUSED__(value)) {}
-  virtual void printSub(unsigned int __UNUSED__(value)) {}
-  virtual void printPutchar(void) {}
-  virtual void printGetchar(void) {}
-  virtual void printLoopStart(void) {}
-  virtual void printLoopEnd(void) {}
-  virtual void printAssignZero(void) {
-    printLoopStart();
-    printSub(1);
-    printLoopEnd();
+  BfIR irCode;
+  unsigned char *code;
+  unsigned char *codePtr;
+  virtual void genHeader(void) = 0;
+  virtual void genFooter(void) = 0;
+  virtual void genPtrAdd(unsigned int value) = 0;
+  virtual void genPtrSub(unsigned int value) = 0;
+  virtual void genAdd(unsigned int value) = 0;
+  virtual void genSub(unsigned int value) = 0;
+  virtual void genPutchar(void) = 0;
+  virtual void genGetchar(void) = 0;
+  virtual void genLoopStart(void) = 0;
+  virtual void genLoopEnd(void) = 0;
+  virtual void genAssignZero(void) {
+    genLoopStart();
+    genSub(1);
+    genLoopEnd();
   }
+public:
+  CodeGenerator(BfIR &irCode, std::size_t codeSize=DEFAULT_MAX_CODE_SIZE) :
+    irCode(irCode), code(NULL), codePtr(NULL)
+  {
+    code = new unsigned char[codeSize];
+    std::memset(code, 0, codeSize);
+    codePtr = code;
+  }
+  CodeGenerator(std::size_t codeSize=DEFAULT_MAX_CODE_SIZE) :
+    code(NULL), codePtr(NULL)
+  {
+    code = new unsigned char[codeSize];
+    std::memset(code, 0, codeSize);
+    codePtr = code;
+  }
+  ~CodeGenerator(void)
+  {
+    delete[] code;
+  }
+
+  void setIRCode(BfIR &irCode)
+  {
+    this->irCode = irCode;
+  }
+  virtual void genCode(void) = 0;
 };
 
 
-inline void 
-CodeGenerator::printIndent(void)
-{
-  for (int i = 0; i < indentLevel; i++) {
-    std::cout << indent;
-  }
-}
-
-
-#endif  // CODE_GENERATOR
+}  // namespace bf
+#endif  // CODE_GENERATOR_H
