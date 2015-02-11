@@ -23,7 +23,7 @@ public:
     ADD, SUB,
     PUTCHAR, GETCHAR,
     LOOP_START, LOOP_END,
-    ASSIGN_ZERO
+    ASSIGN
   } Instruction;
 
   struct Command {

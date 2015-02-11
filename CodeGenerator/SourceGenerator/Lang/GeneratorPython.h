@@ -20,7 +20,7 @@ protected:
   inline void genGetchar(void);
   inline void genLoopStart(void);
   inline void genLoopEnd(void);
-  inline void genAssignZero(void);
+  inline void genAssign(unsigned int value);
 public:
   GeneratorPython(BfIR irCode, std::size_t codeSize=DEFAULT_MAX_CODE_SIZE,
       const char *indent="  ") :
@@ -117,10 +117,10 @@ GeneratorPython::genLoopEnd(void)
 
 
 inline void
-GeneratorPython::genAssignZero(void)
+GeneratorPython::genAssign(unsigned int value)
 {
   genIndent();
-  std::cout << "memory[idx] = 0\n";
+  std::cout << "memory[idx] = " << value << "\n";
 }
 
 

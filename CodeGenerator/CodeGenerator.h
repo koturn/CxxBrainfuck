@@ -33,10 +33,11 @@ protected:
   virtual void genGetchar(void) = 0;
   virtual void genLoopStart(void) = 0;
   virtual void genLoopEnd(void) = 0;
-  virtual void genAssignZero(void) {
+  virtual void genAssign(unsigned int value) {
     genLoopStart();
     genSub(1);
     genLoopEnd();
+    genAdd(value);
   }
 public:
   CodeGenerator(BfIR &irCode, std::size_t codeSize=DEFAULT_MAX_CODE_SIZE) :

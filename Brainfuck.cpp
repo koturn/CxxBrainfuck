@@ -379,8 +379,8 @@ Brainfuck::compileExecute(void) const
           pc = irCode[pc].value;
         }
         break;
-      case BfInstruction::ASSIGN_ZERO:
-        *ptr = 0;
+      case BfInstruction::ASSIGN:
+        *ptr = irCode[pc].value;
         break;
     }
   }

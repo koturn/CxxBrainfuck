@@ -54,9 +54,15 @@ BfIRCompiler::compile(void)
         cmd.value = 0;
         break;
       case '[':
-        if (srcptr[1] == '-' && srcptr[2] == ']') {
-          srcptr += 2;
-          cmd.type = BfInstruction::ASSIGN_ZERO;
+        if ((srcptr[1] == '-' || srcptr[1] == '+') && srcptr[2] == ']') {
+          srcptr += 3;
+          int cnt = 0;
+          for (; *srcptr == '+'; srcptr++) {
+            cnt++;
+          }
+          srcptr--;
+          cmd.type = BfInstruction::ASSIGN;
+          cmd.value = cnt;
         } else {
           cmd.type = BfInstruction::LOOP_START;
           loopStack.push(static_cast<unsigned int>(irCode.size()));

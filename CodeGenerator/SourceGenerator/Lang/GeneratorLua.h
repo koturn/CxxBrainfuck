@@ -20,7 +20,7 @@ protected:
   inline void genGetchar(void);
   inline void genLoopStart(void);
   inline void genLoopEnd(void);
-  inline void genAssignZero(void);
+  inline void genAssign(unsigned int value);
 public:
   GeneratorLua(BfIR irCode, std::size_t codeSize=DEFAULT_MAX_CODE_SIZE,
       const char *indent="  ") :
@@ -125,10 +125,10 @@ GeneratorLua::genLoopEnd(void)
 
 
 inline void
-GeneratorLua::genAssignZero(void)
+GeneratorLua::genAssign(unsigned int value)
 {
   genIndent();
-  std::cout << "memory[idx] = 0\n";
+  std::cout << "memory[idx] = " << value << "\n";
 }
 
 

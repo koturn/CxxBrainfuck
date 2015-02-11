@@ -20,7 +20,7 @@ private:
   inline void genGetchar(void);
   inline void genLoopStart(void);
   inline void genLoopEnd(void);
-  inline void genAssignZero(void);
+  inline void genAssign(unsigned int value);
 public:
   GeneratorCpp(BfIR irCode, std::size_t codeSize=DEFAULT_MAX_CODE_SIZE,
       const char *indent="  ") :
@@ -146,10 +146,10 @@ GeneratorCpp::genLoopEnd(void)
 
 
 inline void
-GeneratorCpp::genAssignZero(void)
+GeneratorCpp::genAssign(unsigned int value)
 {
   genIndent();
-  std::cout << "*ptr = 0;\n";
+  std::cout << "*ptr = " << value << ";\n";
 }
 
 

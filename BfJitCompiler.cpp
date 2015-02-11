@@ -125,8 +125,8 @@ BfJitCompiler::compile(void)
           L(toStr(no, F));
         }
         break;
-      case BfInstruction::ASSIGN_ZERO:
-        mov(cur, 0);
+      case BfInstruction::ASSIGN:
+        mov(cur, cmd->value);
         break;
       default:
         break;

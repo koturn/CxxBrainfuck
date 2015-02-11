@@ -66,8 +66,8 @@ BinaryGenerator::genCode(void)
       case BfInstruction::LOOP_END:
         genLoopEnd();
         break;
-      case BfInstruction::ASSIGN_ZERO:
-        genAssignZero();
+      case BfInstruction::ASSIGN:
+        genAssign(cmd->value);
         break;
     }
   }
