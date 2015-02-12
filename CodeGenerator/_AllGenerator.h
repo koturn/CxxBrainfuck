@@ -13,5 +13,4 @@
 #include "BinaryGenerator/Arch/GeneratorWinX86.h"
 
 
-
 #endif  // ALL_GENERATOR_H

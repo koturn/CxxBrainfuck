@@ -21,6 +21,8 @@ protected:
   inline void genLoopStart(void);
   inline void genLoopEnd(void);
   inline void genAssign(unsigned int value);
+  inline void genAddVar(int value);
+  inline void genSubVar(int value);
 public:
   GeneratorRuby(BfIR irCode, std::size_t codeSize=DEFAULT_MAX_CODE_SIZE,
       const char *indent="  ") :
@@ -124,6 +126,49 @@ GeneratorRuby::genAssign(unsigned int value)
 {
   genIndent();
   std::cout << "memory[idx] = " << value << "\n";
+}
+
+
+inline void
+GeneratorRuby::genAddVar(int value)
+{
+  genIndent();
+  std::cout << "unless memory[idx] == 0\n";
+  genIndent();
+  if (value >= 0) {
+    std::cout << indent << "if idx + " << value << " >= memory.size\n";
+    genIndent();
+    std::cout << indent << indent
+              << "memory += [0] * (idx + " << value << " - memory.size + 1)\n";
+    genIndent();
+    std::cout << indent << "end\n";
+    genIndent();
+    std::cout << indent << "memory[idx + " <<  value << "] += memory[idx]\n";
+  } else {
+    std::cout << indent << "memory[idx - " << -value << "] += memory[idx]\n";
+  }
+  genIndent();
+  std::cout << indent << "memory[idx] = 0\n";
+  genIndent();
+  std::cout << "end\n";
+}
+
+
+inline void
+GeneratorRuby::genSubVar(int value)
+{
+  genIndent();
+  std::cout << "unless memory[idx] == 0\n";
+  genIndent();
+  if (value >= 0) {
+    std::cout << indent << "memory[idx + " <<  value << "] -= memory[idx]\n";
+  } else {
+    std::cout << indent << "memory[idx - " << -value << "] -= memory[idx]\n";
+  }
+  genIndent();
+  std::cout << indent << "memory[idx] = 0\n";
+  genIndent();
+  std::cout << "end\n";
 }
 
 

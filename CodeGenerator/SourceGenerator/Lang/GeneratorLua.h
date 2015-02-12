@@ -21,10 +21,12 @@ protected:
   inline void genLoopStart(void);
   inline void genLoopEnd(void);
   inline void genAssign(unsigned int value);
+  inline void genAddVar(int value);
+  inline void genSubVar(int value);
 public:
   GeneratorLua(BfIR irCode, std::size_t codeSize=DEFAULT_MAX_CODE_SIZE,
       const char *indent="  ") :
-    SourceGenerator(irCode, indent, 1) {}
+    SourceGenerator(irCode, indent, 0) {}
 };
 
 
@@ -129,6 +131,74 @@ GeneratorLua::genAssign(unsigned int value)
 {
   genIndent();
   std::cout << "memory[idx] = " << value << "\n";
+}
+
+
+inline void
+GeneratorLua::genAddVar(int value)
+{
+  genIndent();
+  std::cout << "if memory[idx] ~= 0 then\n";
+  genIndent();
+  if (value >= 0) {
+    std::cout << indent << "if memory[idx + " <<  value << "] == nil then\n";
+  } else {
+    std::cout << indent << "if memory[idx - " << -value << "] == nil then\n";
+  }
+  genIndent();
+  if (value >= 0) {
+    std::cout << indent << indent << "memory[idx + " <<  value << "] = 0\n";
+  } else {
+    std::cout << indent << indent << "memory[idx - " << -value << "] = 0\n";
+  }
+  genIndent();
+  std::cout << indent << "end\n";
+  genIndent();
+  if (value >= 0) {
+    std::cout << indent << "memory[idx + " << value
+              << "] = memory[idx + " << value << "] + memory[idx]\n";
+  } else {
+    std::cout << indent << "memory[idx - " << -value
+              << "] = memory[idx - " << -value << "] + memory[idx]\n";
+  }
+  genIndent();
+  std::cout << indent << "memory[idx] = 0\n";
+  genIndent();
+  std::cout << "end\n";
+}
+
+
+inline void
+GeneratorLua::genSubVar(int value)
+{
+  genIndent();
+  std::cout << "if memory[idx] ~= 0 then\n";
+  genIndent();
+  if (value >= 0) {
+    std::cout << indent << "if memory[idx + " <<  value << "] == nil then\n";
+  } else {
+    std::cout << indent << "if memory[idx - " << -value << "] == nil then\n";
+  }
+  genIndent();
+  if (value >= 0) {
+    std::cout << indent << indent << "memory[idx + " <<  value << "] = 0\n";
+  } else {
+    std::cout << indent << indent << "memory[idx - " << -value << "] = 0\n";
+  }
+  genIndent();
+  std::cout << indent << "end\n";
+  genIndent();
+  if (value >= 0) {
+    std::cout << indent << "memory[idx + " << value
+              << "] = memory[idx + " << value << "] - memory[idx]\n";
+  } else {
+    std::cout << indent << "memory[idx - " << -value
+              << "] = memory[idx - " << -value << "] - memory[idx]\n";
+  }
+  genIndent();
+  std::cout << indent << "memory[idx] = 0\n";
+  genIndent();
+  std::cout << "end\n";
 }
 
 

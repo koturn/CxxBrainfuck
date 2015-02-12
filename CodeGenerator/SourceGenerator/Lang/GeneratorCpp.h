@@ -21,6 +21,8 @@ private:
   inline void genLoopStart(void);
   inline void genLoopEnd(void);
   inline void genAssign(unsigned int value);
+  inline void genAddVar(int value);
+  inline void genSubVar(int value);
 public:
   GeneratorCpp(BfIR irCode, std::size_t codeSize=DEFAULT_MAX_CODE_SIZE,
       const char *indent="  ") :
@@ -63,7 +65,6 @@ GeneratorCpp::genPtrAdd(unsigned int value)
   if (value == 1) {
     std::cout << "idx++;\n";
   } else {
-    genIndent();
     std::cout << "idx += " << value << ";\n";
   }
   genIndent();
@@ -149,7 +150,43 @@ inline void
 GeneratorCpp::genAssign(unsigned int value)
 {
   genIndent();
-  std::cout << "*ptr = " << value << ";\n";
+  std::cout << "memory[idx] = " << value << ";\n";
+}
+
+
+inline void
+GeneratorCpp::genAddVar(int value)
+{
+  genIndent();
+  std::cout << "if (memory[idx]) {\n";
+  genIndent();
+  if (value >= 0) {
+    std::cout << indent << "memory[idx + " <<  value << "] += memory[idx];\n";
+  } else {
+    std::cout << indent << "memory[idx - " << -value << "] += memory[idx];\n";
+  }
+  genIndent();
+  std::cout << indent << "memory[idx] = 0;\n";
+  genIndent();
+  std::cout << "}\n";
+}
+
+
+inline void
+GeneratorCpp::genSubVar(int value)
+{
+  genIndent();
+  std::cout << "if (memory[idx]) {\n";
+  genIndent();
+  if (value >= 0) {
+    std::cout << indent << "memory[idx + " <<  value << "] -= memory[idx];\n";
+  } else {
+    std::cout << indent << "memory[idx - " << -value << "] -= memory[idx];\n";
+  }
+  genIndent();
+  std::cout << indent << "memory[idx] = 0;\n";
+  genIndent();
+  std::cout << "}\n";
 }
 
 

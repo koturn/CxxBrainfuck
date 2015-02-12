@@ -25,7 +25,7 @@ C_WARNING_FLAGS := -Wall -Wextra -Wformat=2 -Wstrict-aliasing=2 \
                    -Wcast-align -Wcast-qual -Wconversion \
                    -Wfloat-equal -Wpointer-arith -Wswitch-enum \
                    -Wwrite-strings -pedantic
-# CXX_WARNING_FLAGS := $(C_WARNING_FLAGS) -Woverloaded-virtual
+CXX_WARNING_FLAGS := $(C_WARNING_FLAGS) -Woverloaded-virtual
 
 CXX      := g++
 MAKE     := make
@@ -90,17 +90,11 @@ $(MAIN_OBJ): $(MAIN_SRC)
 
 $(MAIN_SRC): $(HEADER1)
 
-$(OBJ1): $(SRC1)
+$(OBJ1): $(SRC1) $(HEADER1) $(HEADER2) $(HEADER3) $(GENERATORS)
 
-$(OBJ2): $(SRC2)
+$(OBJ2): $(SRC2) $(HEADER2)
 
-$(OBJ3): $(SRC3)
-
-$(SRC1): $(HEADER1) $(HEADER2) $(HEADER3) $(GENERATORS)
-
-$(SRC2): $(HEADER2)
-
-$(SRC3): $(HEADER3)
+$(OBJ3): $(SRC3) $(HEADER3)
 
 
 $(XBYAK_DIR)/xbyak/xbyak.h:

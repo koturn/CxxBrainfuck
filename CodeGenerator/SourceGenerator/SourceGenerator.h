@@ -66,6 +66,12 @@ SourceGenerator::genCode(void)
       case BfInstruction::ASSIGN:
         genAssign(cmd->value);
         break;
+      case BfInstruction::ADD_VAR:
+        genAddVar(cmd->value);
+        break;
+      case BfInstruction::SUB_VAR:
+        genSubVar(cmd->value);
+        break;
     }
   }
   genFooter();

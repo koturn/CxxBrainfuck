@@ -21,10 +21,12 @@ protected:
   inline void genLoopStart(void);
   inline void genLoopEnd(void);
   inline void genAssign(unsigned int value);
+  inline void genAddVar(int value);
+  inline void genSubVar(int value);
 public:
   GeneratorCSharp(BfIR irCode, std::size_t codeSize=DEFAULT_MAX_CODE_SIZE,
-      const char *indent="  ") :
-    SourceGenerator(irCode, indent, 1) {}
+      const char *indent="    ") :
+    SourceGenerator(irCode, indent, 2) {}
 };
 
 
@@ -60,7 +62,6 @@ GeneratorCSharp::genPtrAdd(unsigned int value)
   if (value == 1) {
     std::cout << "idx++;\n";
   } else {
-    genIndent();
     std::cout << "idx += " << value << ";\n";
   }
 }
@@ -143,6 +144,42 @@ GeneratorCSharp::genAssign(unsigned int value)
 {
   genIndent();
   std::cout << "memory[idx] = " << value << ";\n";
+}
+
+
+inline void
+GeneratorCSharp::genAddVar(int value)
+{
+  genIndent();
+  std::cout << "if (memory[idx] != 0) {\n";
+  genIndent();
+  if (value >= 0) {
+    std::cout << indent << "memory[idx + " <<  value << "] += memory[idx];\n";
+  } else {
+    std::cout << indent << "memory[idx - " << -value << "] += memory[idx];\n";
+  }
+  genIndent();
+  std::cout << indent << "memory[idx] = 0;\n";
+  genIndent();
+  std::cout << "}\n";
+}
+
+
+inline void
+GeneratorCSharp::genSubVar(int value)
+{
+  genIndent();
+  std::cout << "if (memory[idx] != 0) {\n";
+  genIndent();
+  if (value >= 0) {
+    std::cout << indent << "memory[idx + " <<  value << "] -= memory[idx];\n";
+  } else {
+    std::cout << indent << "memory[idx - " << -value << "] -= memory[idx];\n";
+  }
+  genIndent();
+  std::cout << indent << "memory[idx] = 0;\n";
+  genIndent();
+  std::cout << "}\n";
 }
 
 

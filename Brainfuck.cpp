@@ -382,6 +382,27 @@ Brainfuck::compileExecute(void) const
       case BfInstruction::ASSIGN:
         *ptr = irCode[pc].value;
         break;
+      case BfInstruction::ADD_VAR:
+        if (*ptr) {
+          *(ptr + static_cast<int>(irCode[pc].value)) += *ptr;
+          *ptr = 0;
+        }
+        break;
+      case BfInstruction::SUB_VAR:
+        /*
+         * Following code is slower. But I Don't know why.
+         *   if (*ptr) {
+         *     *(ptr + static_cast<int>(irCode[pc].value)) -= *ptr;
+         *     *ptr = 0;
+         *   }
+         */
+        while (*ptr) {
+          (*ptr)--;
+          ptr += static_cast<int>(irCode[pc].value);
+          (*ptr)--;
+          ptr -= static_cast<int>(irCode[pc].value);
+        }
+        break;
     }
   }
   delete[] memory;

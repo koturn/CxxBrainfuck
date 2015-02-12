@@ -128,6 +128,52 @@ BfJitCompiler::compile(void)
       case BfInstruction::ASSIGN:
         mov(cur, cmd->value);
         break;
+      case BfInstruction::ADD_VAR:
+        // LOOP_START
+        L(toStr(labelNo, B));
+        mov(eax, cur);
+        test(eax, eax);
+        jz(toStr(labelNo, F), Xbyak::CodeGenerator::T_NEAR);
+        keepLabelNo.push(labelNo++);
+        // SUB
+        dec(cur);
+        // PTR_ADD
+        add(stack, 4 * static_cast<int>(cmd->value));
+        // ADD
+        inc(cur);
+        // PTR_SUB
+        sub(stack, 4 * static_cast<int>(cmd->value));
+        // LOOP_END
+        {
+          int no = keepLabelNo.top();
+          keepLabelNo.pop();
+          jmp(toStr(no, B));
+          L(toStr(no, F));
+        }
+        break;
+      case BfInstruction::SUB_VAR:
+        // LOOP_START
+        L(toStr(labelNo, B));
+        mov(eax, cur);
+        test(eax, eax);
+        jz(toStr(labelNo, F), Xbyak::CodeGenerator::T_NEAR);
+        keepLabelNo.push(labelNo++);
+        // SUB
+        dec(cur);
+        // PTR_ADD
+        add(stack, 4 * static_cast<int>(cmd->value));
+        // SUB
+        dec(cur);
+        // PTR_SUB
+        sub(stack, 4 * static_cast<int>(cmd->value));
+        // LOOP_END
+        {
+          int no = keepLabelNo.top();
+          keepLabelNo.pop();
+          jmp(toStr(no, B));
+          L(toStr(no, F));
+        }
+        break;
       default:
         break;
     }

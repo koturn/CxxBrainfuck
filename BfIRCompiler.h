@@ -23,7 +23,7 @@ public:
     ADD, SUB,
     PUTCHAR, GETCHAR,
     LOOP_START, LOOP_END,
-    ASSIGN
+    ASSIGN, ADD_VAR, SUB_VAR, CMUL_VAR
   } Instruction;
 
   struct Command {
@@ -55,6 +55,26 @@ private:
   BfIR irCode;
 };
 
+
+static inline const char *
+dumpEnum(BfInstruction::Instruction inst)
+{
+  switch (inst) {
+    case BfInstruction::PTR_ADD: return "PTR_ADD";
+    case BfInstruction::PTR_SUB: return "PTR_SUB";
+    case BfInstruction::ADD: return "ADD";
+    case BfInstruction::SUB: return "SUB";
+    case BfInstruction::PUTCHAR: return "PUTCHAR";
+    case BfInstruction::GETCHAR: return "GETCHAR";
+    case BfInstruction::LOOP_START: return "LOOP_START";
+    case BfInstruction::LOOP_END: return "LOOP_END";
+    case BfInstruction::ASSIGN: return "ASSIGN";
+    case BfInstruction::ADD_VAR: return "ADD_VAR";
+    case BfInstruction::SUB_VAR: return "SUB_VAR";
+    case BfInstruction::CMUL_VAR: return "CMUL_VAR";
+  }
+  return "NONE";
+}
 
 
 
