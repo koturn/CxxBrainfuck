@@ -22,10 +22,10 @@ private:
   inline void genEpirogue(void);
   inline void genHeader(void);
   inline void genFooter(void);
-  inline void genNextN(unsigned int value);
-  inline void genPrevN(unsigned int value);
-  inline void genAdd(unsigned int value);
-  inline void genSub(unsigned int value);
+  inline void genNextN(int value);
+  inline void genPrevN(int value);
+  inline void genAdd(int value);
+  inline void genSub(int value);
   inline void genPutchar(void);
   inline void genGetchar(void);
   inline void genLoopStart(void);
@@ -209,36 +209,36 @@ GeneratorWinX86::genFooter(void)
 
 
 inline void
-GeneratorWinX86::genNextN(unsigned int value)
+GeneratorWinX86::genNextN(int value)
 {
-  for (unsigned int i = 0; i < value; i++) {
+  for (int i = 0; i < value; i++) {
     *codePtr++ = 0x66; *codePtr++ = 0x41;  // inc cx
   }
 }
 
 
 inline void
-GeneratorWinX86::genPrevN(unsigned int value)
+GeneratorWinX86::genPrevN(int value)
 {
-  for (unsigned int i = 0; i < value; i++) {
+  for (int i = 0; i < value; i++) {
     *codePtr++ = 0x66; *codePtr++ = 0x49;  // dec cx
   }
 }
 
 
 inline void
-GeneratorWinX86::genAdd(unsigned int value)
+GeneratorWinX86::genAdd(int value)
 {
-  for (unsigned int i = 0; i < value; i++) {
+  for (int i = 0; i < value; i++) {
     *codePtr++ = 0xfe; *codePtr++ = 0x04; *codePtr++ = 0x0f;  // inc byte [edi+ecx]
   }
 }
 
 
 inline void
-GeneratorWinX86::genSub(unsigned int value)
+GeneratorWinX86::genSub(int value)
 {
-  for (unsigned int i = 0; i < value; i++) {
+  for (int i = 0; i < value; i++) {
     *codePtr++ = 0xfe; *codePtr++ = 0x0c; *codePtr++ = 0x0f;  // dec byte [edi+ecx]
   }
 }

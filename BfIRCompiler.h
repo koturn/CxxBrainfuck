@@ -28,7 +28,8 @@ public:
 
   struct Command {
     Instruction  type;
-    unsigned int value;
+    int value1;
+    int value2;
   };
 };
 

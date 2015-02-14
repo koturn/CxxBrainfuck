@@ -31,21 +31,21 @@ protected:
   virtual void genPrev(void) {
     genPrevN(1);
   }
-  virtual void genNextN(unsigned int value) = 0;
-  virtual void genPrevN(unsigned int value) = 0;
+  virtual void genNextN(int value) = 0;
+  virtual void genPrevN(int value) = 0;
   virtual void genInc(void) {
     genAdd(1);
   }
   virtual void genDec(void) {
     genSub(1);
   }
-  virtual void genAdd(unsigned int value) = 0;
-  virtual void genSub(unsigned int value) = 0;
+  virtual void genAdd(int value) = 0;
+  virtual void genSub(int value) = 0;
   virtual void genPutchar(void) = 0;
   virtual void genGetchar(void) = 0;
   virtual void genLoopStart(void) = 0;
   virtual void genLoopEnd(void) = 0;
-  virtual void genAssign(unsigned int value)
+  virtual void genAssign(int value)
   {
     genLoopStart();
     genDec();

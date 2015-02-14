@@ -26,7 +26,7 @@ public:
   BfJitCompiler(std::size_t size=DEFAULT_GENERATOR_SIZE) :
     CodeGenerator(size) {}
   BfJitCompiler(BfIR &irCode, std::size_t size=DEFAULT_GENERATOR_SIZE) :
-    irCode(irCode), CodeGenerator(size) {}
+    CodeGenerator(size), irCode(irCode) {}
   void setIRCode(BfIR &irCode) { this->irCode = irCode; }
   void compile(void);
 };

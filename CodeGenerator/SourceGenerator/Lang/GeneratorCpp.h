@@ -14,17 +14,17 @@ private:
   inline void genFooter(void);
   inline void genNext(void);
   inline void genPrev(void);
-  inline void genNextN(unsigned int value);
-  inline void genPrevN(unsigned int value);
+  inline void genNextN(int value);
+  inline void genPrevN(int value);
   inline void genInc(void);
   inline void genDec(void);
-  inline void genAdd(unsigned int value);
-  inline void genSub(unsigned int value);
+  inline void genAdd(int value);
+  inline void genSub(int value);
   inline void genPutchar(void);
   inline void genGetchar(void);
   inline void genLoopStart(void);
   inline void genLoopEnd(void);
-  inline void genAssign(unsigned int value);
+  inline void genAssign(int value);
   inline void genAddVar(int value);
   inline void genSubVar(int value);
 public:
@@ -85,7 +85,7 @@ GeneratorCpp::genPrev(void)
 
 
 inline void
-GeneratorCpp::genNextN(unsigned int value)
+GeneratorCpp::genNextN(int value)
 {
   genIndent();
   std::cout << "idx += " << value << ";\n";
@@ -99,7 +99,7 @@ GeneratorCpp::genNextN(unsigned int value)
 
 
 inline void
-GeneratorCpp::genPrevN(unsigned int value)
+GeneratorCpp::genPrevN(int value)
 {
   genIndent();
   std::cout << "idx -= " << value << ";\n";
@@ -123,7 +123,7 @@ GeneratorCpp::genDec(void)
 
 
 inline void
-GeneratorCpp::genAdd(unsigned int value)
+GeneratorCpp::genAdd(int value)
 {
   genIndent();
   std::cout << "memory[idx] += " << value << ";\n";
@@ -131,7 +131,7 @@ GeneratorCpp::genAdd(unsigned int value)
 
 
 inline void
-GeneratorCpp::genSub(unsigned int value)
+GeneratorCpp::genSub(int value)
 {
   genIndent();
   std::cout << "memory[idx] -= " << value << ";\n";
@@ -173,7 +173,7 @@ GeneratorCpp::genLoopEnd(void)
 
 
 inline void
-GeneratorCpp::genAssign(unsigned int value)
+GeneratorCpp::genAssign(int value)
 {
   genIndent();
   std::cout << "memory[idx] = " << value << ";\n";

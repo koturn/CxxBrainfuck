@@ -14,17 +14,17 @@ protected:
   inline void genFooter(void);
   inline void genNext(void);
   inline void genPrev(void);
-  inline void genNextN(unsigned int value);
-  inline void genPrevN(unsigned int value);
+  inline void genNextN(int value);
+  inline void genPrevN(int value);
   inline void genInc(void);
   inline void genDec(void);
-  inline void genAdd(unsigned int value);
-  inline void genSub(unsigned int value);
+  inline void genAdd(int value);
+  inline void genSub(int value);
   inline void genPutchar(void);
   inline void genGetchar(void);
   inline void genLoopStart(void);
   inline void genLoopEnd(void);
-  inline void genAssign(unsigned int value);
+  inline void genAssign(int value);
   inline void genAddVar(int value);
   inline void genSubVar(int value);
 public:
@@ -73,7 +73,7 @@ GeneratorJava::genPrev(void)
 
 
 inline void
-GeneratorJava::genNextN(unsigned int value)
+GeneratorJava::genNextN(int value)
 {
   genIndent();
   std::cout << "idx += " << value << ";\n";
@@ -81,7 +81,7 @@ GeneratorJava::genNextN(unsigned int value)
 
 
 inline void
-GeneratorJava::genPrevN(unsigned int value)
+GeneratorJava::genPrevN(int value)
 {
   genIndent();
   std::cout << "idx -= " << value << ";\n";
@@ -105,7 +105,7 @@ GeneratorJava::genDec(void)
 
 
 inline void
-GeneratorJava::genAdd(unsigned int value)
+GeneratorJava::genAdd(int value)
 {
   genIndent();
   std::cout << "memory[idx] += " << value << ";\n";
@@ -113,7 +113,7 @@ GeneratorJava::genAdd(unsigned int value)
 
 
 inline void
-GeneratorJava::genSub(unsigned int value)
+GeneratorJava::genSub(int value)
 {
   genIndent();
   std::cout << "memory[idx] -= " << value << ";\n";
@@ -155,7 +155,7 @@ GeneratorJava::genLoopEnd(void)
 
 
 inline void
-GeneratorJava::genAssign(unsigned int value)
+GeneratorJava::genAssign(int value)
 {
   genIndent();
   std::cout << "memory[idx] = " << value << ";\n";

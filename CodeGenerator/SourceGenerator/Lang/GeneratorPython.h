@@ -12,15 +12,15 @@ class GeneratorPython : public SourceGenerator {
 protected:
   inline void genHeader(void);
   inline void genFooter(void);
-  inline void genNextN(unsigned int value);
-  inline void genPrevN(unsigned int value);
-  inline void genAdd(unsigned int value);
-  inline void genSub(unsigned int value);
+  inline void genNextN(int value);
+  inline void genPrevN(int value);
+  inline void genAdd(int value);
+  inline void genSub(int value);
   inline void genPutchar(void);
   inline void genGetchar(void);
   inline void genLoopStart(void);
   inline void genLoopEnd(void);
-  inline void genAssign(unsigned int value);
+  inline void genAssign(int value);
   inline void genAddVar(int value);
   inline void genSubVar(int value);
 public:
@@ -51,7 +51,7 @@ GeneratorPython::genFooter(void)
 
 
 inline void
-GeneratorPython::genNextN(unsigned int value)
+GeneratorPython::genNextN(int value)
 {
   genIndent();
   std::cout << "idx += " << value << "\n";
@@ -63,7 +63,7 @@ GeneratorPython::genNextN(unsigned int value)
 
 
 inline void
-GeneratorPython::genPrevN(unsigned int value)
+GeneratorPython::genPrevN(int value)
 {
   genIndent();
   std::cout << "idx -= " << value << "\n";
@@ -71,7 +71,7 @@ GeneratorPython::genPrevN(unsigned int value)
 
 
 inline void
-GeneratorPython::genAdd(unsigned int value)
+GeneratorPython::genAdd(int value)
 {
   genIndent();
   std::cout << "memory[idx] += " << value << "\n";
@@ -79,7 +79,7 @@ GeneratorPython::genAdd(unsigned int value)
 
 
 inline void
-GeneratorPython::genSub(unsigned int value)
+GeneratorPython::genSub(int value)
 {
   genIndent();
   std::cout << "memory[idx] -= " << value << "\n";
@@ -119,7 +119,7 @@ GeneratorPython::genLoopEnd(void)
 
 
 inline void
-GeneratorPython::genAssign(unsigned int value)
+GeneratorPython::genAssign(int value)
 {
   genIndent();
   std::cout << "memory[idx] = " << value << "\n";

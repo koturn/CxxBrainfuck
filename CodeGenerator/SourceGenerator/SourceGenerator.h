@@ -46,10 +46,10 @@ SourceGenerator::genCode(void)
         genPrev();
         break;
       case BfInstruction::NEXT_N:
-        genNextN(cmd->value);
+        genNextN(cmd->value1);
         break;
       case BfInstruction::PREV_N:
-        genPrevN(cmd->value);
+        genPrevN(cmd->value1);
         break;
       case BfInstruction::INC:
         genInc();
@@ -58,10 +58,10 @@ SourceGenerator::genCode(void)
         genDec();
         break;
       case BfInstruction::ADD:
-        genAdd(cmd->value);
+        genAdd(cmd->value1);
         break;
       case BfInstruction::SUB:
-        genSub(cmd->value);
+        genSub(cmd->value1);
         break;
       case BfInstruction::PUTCHAR:
         genPutchar();
@@ -76,13 +76,13 @@ SourceGenerator::genCode(void)
         genLoopEnd();
         break;
       case BfInstruction::ASSIGN:
-        genAssign(cmd->value);
+        genAssign(cmd->value1);
         break;
       case BfInstruction::ADD_VAR:
-        genAddVar(cmd->value);
+        genAddVar(cmd->value1);
         break;
       case BfInstruction::SUB_VAR:
-        genSubVar(cmd->value);
+        genSubVar(cmd->value1);
         break;
     }
   }

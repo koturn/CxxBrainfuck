@@ -358,10 +358,10 @@ Brainfuck::compileExecute(void) const
         ptr--;
         break;
       case BfInstruction::NEXT_N:
-        ptr += irCode[pc].value;
+        ptr += irCode[pc].value1;
         break;
       case BfInstruction::PREV_N:
-        ptr -= irCode[pc].value;
+        ptr -= irCode[pc].value1;
         break;
       case BfInstruction::INC:
         (*ptr)++;
@@ -370,10 +370,10 @@ Brainfuck::compileExecute(void) const
         (*ptr)--;
         break;
       case BfInstruction::ADD:
-        *ptr += irCode[pc].value;
+        *ptr += irCode[pc].value1;
         break;
       case BfInstruction::SUB:
-        *ptr -= irCode[pc].value;
+        *ptr -= irCode[pc].value1;
         break;
       case BfInstruction::PUTCHAR:
         std::cout.put(static_cast<char>(*ptr));
@@ -383,20 +383,20 @@ Brainfuck::compileExecute(void) const
         break;
       case BfInstruction::LOOP_START:
         if (*ptr == 0) {
-          pc = irCode[pc].value;
+          pc = irCode[pc].value1;
         }
         break;
       case BfInstruction::LOOP_END:
         if (*ptr != 0) {
-          pc = irCode[pc].value;
+          pc = irCode[pc].value1;
         }
         break;
       case BfInstruction::ASSIGN:
-        *ptr = irCode[pc].value;
+        *ptr = irCode[pc].value1;
         break;
       case BfInstruction::ADD_VAR:
         if (*ptr) {
-          *(ptr + static_cast<int>(irCode[pc].value)) += *ptr;
+          *(ptr + irCode[pc].value1) += *ptr;
           *ptr = 0;
         }
         break;
@@ -404,15 +404,15 @@ Brainfuck::compileExecute(void) const
         /*
          * Following code is slower. But I Don't know why.
          *   if (*ptr) {
-         *     *(ptr + static_cast<int>(irCode[pc].value)) -= *ptr;
+         *     *(ptr + static_cast<int>(irCode[pc].value1)) -= *ptr;
          *     *ptr = 0;
          *   }
          */
         while (*ptr) {
           (*ptr)--;
-          ptr += static_cast<int>(irCode[pc].value);
+          ptr += irCode[pc].value1;
           (*ptr)--;
-          ptr -= static_cast<int>(irCode[pc].value);
+          ptr -= irCode[pc].value1;
         }
         break;
     }

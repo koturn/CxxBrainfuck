@@ -9,9 +9,6 @@
 #include "BfIRCompiler.h"
 
 
-static unsigned int
-countChar(const char *srcptr, char ch);
-
 template<char INST1, char INST2>
 static int
 compressInstruction(const char **_srcptr);
@@ -38,18 +35,22 @@ BfIRCompiler::compile(void)
           if (value > 0) {
             if (value == 1) {
               cmd.type = BfInstruction::NEXT;
-              cmd.value = 0;
+              cmd.value1 = 0;
+              cmd.value2 = 0;
             } else {
               cmd.type = BfInstruction::NEXT_N;
-              cmd.value = value;
+              cmd.value1 = value;
+              cmd.value2 = 0;
             }
           } else if (value < 0) {
             if (value == -1) {
               cmd.type = BfInstruction::PREV;
-              cmd.value = 0;
+              cmd.value1 = 0;
+              cmd.value2 = 0;
             } else {
               cmd.type = BfInstruction::PREV_N;
-              cmd.value = -value;
+              cmd.value1 = -value;
+              cmd.value2 = 0;
             }
           } else {
             continue;
@@ -63,18 +64,22 @@ BfIRCompiler::compile(void)
           if (value > 0) {
             if (value == 1) {
               cmd.type = BfInstruction::PREV;
-              cmd.value = 0;
+              cmd.value1 = 0;
+              cmd.value2 = 0;
             } else {
               cmd.type = BfInstruction::PREV_N;
-              cmd.value = value;
+              cmd.value1 = value;
+              cmd.value2 = 0;
             }
           } else if (value < 0) {
             if (value == 1) {
               cmd.type = BfInstruction::NEXT;
-              cmd.value = 0;
+              cmd.value1 = 0;
+              cmd.value2 = 0;
             } else {
               cmd.type = BfInstruction::NEXT_N;
-              cmd.value = -value;
+              cmd.value1 = -value;
+              cmd.value2 = 0;
             }
           } else {
             continue;
@@ -88,18 +93,22 @@ BfIRCompiler::compile(void)
           if (value > 0) {
             if (value == 1) {
               cmd.type = BfInstruction::INC;
-              cmd.value = 0;
+              cmd.value1 = 0;
+              cmd.value2 = 0;
             } else {
               cmd.type = BfInstruction::ADD;
-              cmd.value = value;
+              cmd.value1 = value;
+              cmd.value2 = 0;
             }
           } else if (value < 0) {
             if (value == 1) {
               cmd.type = BfInstruction::DEC;
-              cmd.value = 0;
+              cmd.value1 = 0;
+              cmd.value2 = 0;
             } else {
               cmd.type = BfInstruction::SUB;
-              cmd.value = -value;
+              cmd.value1 = -value;
+              cmd.value2 = 0;
             }
           } else {
             continue;
@@ -113,18 +122,22 @@ BfIRCompiler::compile(void)
           if (value > 0) {
             if (value == 1) {
               cmd.type = BfInstruction::DEC;
-              cmd.value = 0;
+              cmd.value1 = 0;
+              cmd.value2 = 0;
             } else {
               cmd.type = BfInstruction::SUB;
-              cmd.value = value;
+              cmd.value1 = value;
+              cmd.value2 = 0;
             }
           } else if (value < 0) {
             if (value == 1) {
               cmd.type = BfInstruction::INC;
-              cmd.value = 0;
+              cmd.value1 = 0;
+              cmd.value2 = 0;
             } else {
               cmd.type = BfInstruction::ADD;
-              cmd.value = -value;
+              cmd.value1 = -value;
+              cmd.value2 = 0;
             }
           } else {
             continue;
@@ -133,11 +146,13 @@ BfIRCompiler::compile(void)
         break;
       case '.':
         cmd.type = BfInstruction::PUTCHAR;
-        cmd.value = 0;
+        cmd.value1 = 0;
+        cmd.value2 = 0;
         break;
       case ',':
         cmd.type = BfInstruction::GETCHAR;
-        cmd.value = 0;
+        cmd.value1 = 0;
+        cmd.value2 = 0;
         break;
       case '[':
         switch (srcptr[1]) {
@@ -150,7 +165,8 @@ BfIRCompiler::compile(void)
               }
               srcptr--;
               cmd.type = BfInstruction::ASSIGN;
-              cmd.value = cnt;
+              cmd.value1 = cnt;
+              cmd.value2 = 0;
             } else {
               const char *_srcptr = srcptr;
               srcptr += 2;
@@ -167,10 +183,12 @@ BfIRCompiler::compile(void)
                 srcptr++;
                 if (cnt2 == 1) {
                   cmd.type = BfInstruction::ADD_VAR;
-                  cmd.value = cnt1;
+                  cmd.value1 = cnt1;
+                  cmd.value2 = 0;
                 } else if (cnt2 == -1) {
                   cmd.type = BfInstruction::SUB_VAR;
-                  cmd.value = cnt1;
+                  cmd.value1 = cnt1;
+                  cmd.value2 = 0;
                 } else {
                   srcptr = _srcptr;
                   cmd.type = BfInstruction::LOOP_START;
@@ -197,10 +215,12 @@ BfIRCompiler::compile(void)
                 srcptr += 2;
                 if (cnt2 == 1) {
                   cmd.type = BfInstruction::ADD_VAR;
-                  cmd.value = cnt1;
+                  cmd.value1 = cnt1;
+                  cmd.value2 = 0;
                 } else if (cnt2 == -1) {
                   cmd.type = BfInstruction::SUB_VAR;
-                  cmd.value = cnt1;
+                  cmd.value1 = cnt1;
+                  cmd.value2 = 0;
                 } else {
                   srcptr = _srcptr;
                   cmd.type = BfInstruction::LOOP_START;
@@ -216,8 +236,9 @@ BfIRCompiler::compile(void)
         break;
       case ']':
         cmd.type = BfInstruction::LOOP_END;
-        cmd.value = loopStack.top();
-        irCode[loopStack.top()].value = static_cast<unsigned int>(irCode.size() - 1);
+        cmd.value1 = loopStack.top();
+        cmd.value2 = 0;
+        irCode[loopStack.top()].value1 = static_cast<unsigned int>(irCode.size() - 1);
         loopStack.pop();
         break;
     }
@@ -229,21 +250,6 @@ BfIRCompiler::compile(void)
 }  // namespace bf
 
 
-
-
-/*!
- * @brief Count how many given character are continuous.
- * @return The number of consecutive characters
- */
-static unsigned int
-countChar(const char *srcptr, char ch)
-{
-  unsigned int cnt = 1;
-  while (*++srcptr == ch) {
-    cnt++;
-  }
-  return cnt;
-}
 
 
 /*!

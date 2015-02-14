@@ -12,15 +12,15 @@ class GeneratorLua : public SourceGenerator {
 protected:
   inline void genHeader(void);
   inline void genFooter(void);
-  inline void genNextN(unsigned int value);
-  inline void genPrevN(unsigned int value);
-  inline void genAdd(unsigned int value);
-  inline void genSub(unsigned int value);
+  inline void genNextN(int value);
+  inline void genPrevN(int value);
+  inline void genAdd(int value);
+  inline void genSub(int value);
   inline void genPutchar(void);
   inline void genGetchar(void);
   inline void genLoopStart(void);
   inline void genLoopEnd(void);
-  inline void genAssign(unsigned int value);
+  inline void genAssign(int value);
   inline void genAddVar(int value);
   inline void genSubVar(int value);
 public:
@@ -49,7 +49,7 @@ GeneratorLua::genFooter(void)
 
 
 inline void
-GeneratorLua::genNextN(unsigned int value)
+GeneratorLua::genNextN(int value)
 {
   genIndent();
   std::cout << "idx = idx + " << value << "\n";
@@ -63,7 +63,7 @@ GeneratorLua::genNextN(unsigned int value)
 
 
 inline void
-GeneratorLua::genPrevN(unsigned int value)
+GeneratorLua::genPrevN(int value)
 {
   genIndent();
   std::cout << "idx = idx - " << value << "\n";
@@ -77,7 +77,7 @@ GeneratorLua::genPrevN(unsigned int value)
 
 
 inline void
-GeneratorLua::genAdd(unsigned int value)
+GeneratorLua::genAdd(int value)
 {
   genIndent();
   std::cout << "memory[idx] = memory[idx] + " << value << "\n";
@@ -85,7 +85,7 @@ GeneratorLua::genAdd(unsigned int value)
 
 
 inline void
-GeneratorLua::genSub(unsigned int value)
+GeneratorLua::genSub(int value)
 {
   genIndent();
   std::cout << "memory[idx] = memory[idx] - " << value << "\n";
@@ -127,7 +127,7 @@ GeneratorLua::genLoopEnd(void)
 
 
 inline void
-GeneratorLua::genAssign(unsigned int value)
+GeneratorLua::genAssign(int value)
 {
   genIndent();
   std::cout << "memory[idx] = " << value << "\n";

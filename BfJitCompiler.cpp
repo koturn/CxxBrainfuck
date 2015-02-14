@@ -71,10 +71,10 @@ BfJitCompiler::compile(void)
         sub(stack, 4);
         break;
       case BfInstruction::NEXT_N:
-        add(stack, 4 * cmd->value);
+        add(stack, 4 * cmd->value1);
         break;
       case BfInstruction::PREV_N:
-        sub(stack, 4 * cmd->value);
+        sub(stack, 4 * cmd->value1);
         break;
       case BfInstruction::INC:
         inc(cur);
@@ -83,10 +83,10 @@ BfJitCompiler::compile(void)
         dec(cur);
         break;
       case BfInstruction::ADD:
-        add(cur, cmd->value);
+        add(cur, cmd->value1);
         break;
       case BfInstruction::SUB:
-        sub(cur, cmd->value);
+        sub(cur, cmd->value1);
         break;
       case BfInstruction::PUTCHAR:
 #ifdef XBYAK32
@@ -130,7 +130,7 @@ BfJitCompiler::compile(void)
         }
         break;
       case BfInstruction::ASSIGN:
-        mov(cur, cmd->value);
+        mov(cur, cmd->value1);
         break;
       case BfInstruction::ADD_VAR:
         // LOOP_START
@@ -142,11 +142,11 @@ BfJitCompiler::compile(void)
         // SUB
         dec(cur);
         // PTR_ADD
-        add(stack, 4 * static_cast<int>(cmd->value));
+        add(stack, 4 * static_cast<int>(cmd->value1));
         // ADD
         inc(cur);
         // PTR_SUB
-        sub(stack, 4 * static_cast<int>(cmd->value));
+        sub(stack, 4 * static_cast<int>(cmd->value1));
         // LOOP_END
         {
           int no = keepLabelNo.top();
@@ -165,11 +165,11 @@ BfJitCompiler::compile(void)
         // SUB
         dec(cur);
         // PTR_ADD
-        add(stack, 4 * static_cast<int>(cmd->value));
+        add(stack, 4 * static_cast<int>(cmd->value1));
         // SUB
         dec(cur);
         // PTR_SUB
-        sub(stack, 4 * static_cast<int>(cmd->value));
+        sub(stack, 4 * static_cast<int>(cmd->value1));
         // LOOP_END
         {
           int no = keepLabelNo.top();

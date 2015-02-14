@@ -49,10 +49,10 @@ BinaryGenerator::genCode(void)
         genPrev();
         break;
       case BfInstruction::NEXT_N:
-        genNextN(cmd->value);
+        genNextN(cmd->value1);
         break;
       case BfInstruction::PREV_N:
-        genPrevN(cmd->value);
+        genPrevN(cmd->value1);
         break;
       case BfInstruction::INC:
         genInc();
@@ -61,10 +61,10 @@ BinaryGenerator::genCode(void)
         genDec();
         break;
       case BfInstruction::ADD:
-        genAdd(cmd->value);
+        genAdd(cmd->value1);
         break;
       case BfInstruction::SUB:
-        genSub(cmd->value);
+        genSub(cmd->value1);
         break;
       case BfInstruction::PUTCHAR:
         genPutchar();
@@ -79,7 +79,7 @@ BinaryGenerator::genCode(void)
         genLoopEnd();
         break;
       case BfInstruction::ASSIGN:
-        genAssign(cmd->value);
+        genAssign(cmd->value1);
         break;
     }
   }

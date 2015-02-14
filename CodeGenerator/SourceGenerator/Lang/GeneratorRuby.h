@@ -12,15 +12,15 @@ class GeneratorRuby : public SourceGenerator {
 protected:
   inline void genHeader(void);
   inline void genFooter(void);
-  inline void genNextN(unsigned int value);
-  inline void genPrevN(unsigned int value);
-  inline void genAdd(unsigned int value);
-  inline void genSub(unsigned int value);
+  inline void genNextN(int value);
+  inline void genPrevN(int value);
+  inline void genAdd(int value);
+  inline void genSub(int value);
   inline void genPutchar(void);
   inline void genGetchar(void);
   inline void genLoopStart(void);
   inline void genLoopEnd(void);
-  inline void genAssign(unsigned int value);
+  inline void genAssign(int value);
   inline void genAddVar(int value);
   inline void genSubVar(int value);
 public:
@@ -50,7 +50,7 @@ GeneratorRuby::genFooter(void)
 
 
 inline void
-GeneratorRuby::genNextN(unsigned int value)
+GeneratorRuby::genNextN(int value)
 {
   genIndent();
   std::cout << "idx += " << value << "\n";
@@ -64,7 +64,7 @@ GeneratorRuby::genNextN(unsigned int value)
 
 
 inline void
-GeneratorRuby::genPrevN(unsigned int value)
+GeneratorRuby::genPrevN(int value)
 {
   genIndent();
   std::cout << "idx -= " << value << "\n";
@@ -72,7 +72,7 @@ GeneratorRuby::genPrevN(unsigned int value)
 
 
 inline void
-GeneratorRuby::genAdd(unsigned int value)
+GeneratorRuby::genAdd(int value)
 {
   genIndent();
   std::cout << "memory[idx] += " << value << "\n";
@@ -80,7 +80,7 @@ GeneratorRuby::genAdd(unsigned int value)
 
 
 inline void
-GeneratorRuby::genSub(unsigned int value)
+GeneratorRuby::genSub(int value)
 {
   genIndent();
   std::cout << "memory[idx] -= " << value << "\n";
@@ -122,7 +122,7 @@ GeneratorRuby::genLoopEnd(void)
 
 
 inline void
-GeneratorRuby::genAssign(unsigned int value)
+GeneratorRuby::genAssign(int value)
 {
   genIndent();
   std::cout << "memory[idx] = " << value << "\n";

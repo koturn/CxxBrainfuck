@@ -17,10 +17,10 @@ private:
   inline void genEpirogue(void);
   inline void genHeader(void);
   inline void genFooter(void);
-  inline void genNextN(unsigned int value);
-  inline void genPrevN(unsigned int value);
-  inline void genAdd(unsigned int value);
-  inline void genSub(unsigned int value);
+  inline void genNextN(int value);
+  inline void genPrevN(int value);
+  inline void genAdd(int value);
+  inline void genSub(int value);
   inline void genPutchar(void);
   inline void genGetchar(void);
   inline void genLoopStart(void);
@@ -183,36 +183,36 @@ GeneratorElfX64::genFooter(void)
 
 
 inline void
-GeneratorElfX64::genNextN(unsigned int value)
+GeneratorElfX64::genNextN(int value)
 {
-  for (unsigned int i = 0; i < value; i++) {
+  for (int i = 0; i < value; i++) {
     *codePtr++ = 0x48; *codePtr++ = 0xff; *codePtr++ = 0xc3;  // inc rbx
   }
 }
 
 
 inline void
-GeneratorElfX64::genPrevN(unsigned int value)
+GeneratorElfX64::genPrevN(int value)
 {
-  for (unsigned int i = 0; i < value; i++) {
+  for (int i = 0; i < value; i++) {
     *codePtr++ = 0x48; *codePtr++ = 0xff; *codePtr++ = 0xcb;  // dec rbx
   }
 }
 
 
 inline void
-GeneratorElfX64::genAdd(unsigned int value)
+GeneratorElfX64::genAdd(int value)
 {
-  for (unsigned int i = 0; i < value; i++) {
+  for (int i = 0; i < value; i++) {
     *codePtr++ = 0xfe; *codePtr++ = 0x03;  // inc byte ptr [rbx]
   }
 }
 
 
 inline void
-GeneratorElfX64::genSub(unsigned int value)
+GeneratorElfX64::genSub(int value)
 {
-  for (unsigned int i = 0; i < value; i++) {
+  for (int i = 0; i < value; i++) {
     *codePtr++ = 0xfe; *codePtr++ = 0x0b;  // dec byte ptr [rbx]
   }
 }
