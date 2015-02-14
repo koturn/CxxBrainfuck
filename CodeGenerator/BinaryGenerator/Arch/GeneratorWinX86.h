@@ -22,8 +22,8 @@ private:
   inline void genEpirogue(void);
   inline void genHeader(void);
   inline void genFooter(void);
-  inline void genPtrAdd(unsigned int value);
-  inline void genPtrSub(unsigned int value);
+  inline void genNextN(unsigned int value);
+  inline void genPrevN(unsigned int value);
   inline void genAdd(unsigned int value);
   inline void genSub(unsigned int value);
   inline void genPutchar(void);
@@ -209,7 +209,7 @@ GeneratorWinX86::genFooter(void)
 
 
 inline void
-GeneratorWinX86::genPtrAdd(unsigned int value)
+GeneratorWinX86::genNextN(unsigned int value)
 {
   for (unsigned int i = 0; i < value; i++) {
     *codePtr++ = 0x66; *codePtr++ = 0x41;  // inc cx
@@ -218,7 +218,7 @@ GeneratorWinX86::genPtrAdd(unsigned int value)
 
 
 inline void
-GeneratorWinX86::genPtrSub(unsigned int value)
+GeneratorWinX86::genPrevN(unsigned int value)
 {
   for (unsigned int i = 0; i < value; i++) {
     *codePtr++ = 0x66; *codePtr++ = 0x49;  // dec cx

@@ -12,8 +12,8 @@ class GeneratorPython : public SourceGenerator {
 protected:
   inline void genHeader(void);
   inline void genFooter(void);
-  inline void genPtrAdd(unsigned int value);
-  inline void genPtrSub(unsigned int value);
+  inline void genNextN(unsigned int value);
+  inline void genPrevN(unsigned int value);
   inline void genAdd(unsigned int value);
   inline void genSub(unsigned int value);
   inline void genPutchar(void);
@@ -51,7 +51,7 @@ GeneratorPython::genFooter(void)
 
 
 inline void
-GeneratorPython::genPtrAdd(unsigned int value)
+GeneratorPython::genNextN(unsigned int value)
 {
   genIndent();
   std::cout << "idx += " << value << "\n";
@@ -63,7 +63,7 @@ GeneratorPython::genPtrAdd(unsigned int value)
 
 
 inline void
-GeneratorPython::genPtrSub(unsigned int value)
+GeneratorPython::genPrevN(unsigned int value)
 {
   genIndent();
   std::cout << "idx -= " << value << "\n";

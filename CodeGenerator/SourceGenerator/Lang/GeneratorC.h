@@ -12,8 +12,12 @@ class GeneratorC : public SourceGenerator {
 private:
   inline void genHeader(void);
   inline void genFooter(void);
-  inline void genPtrAdd(unsigned int value);
-  inline void genPtrSub(unsigned int value);
+  inline void genNext(void);
+  inline void genPrev(void);
+  inline void genNextN(unsigned int value);
+  inline void genPrevN(unsigned int value);
+  inline void genInc(void);
+  inline void genDec(void);
   inline void genAdd(unsigned int value);
   inline void genSub(unsigned int value);
   inline void genPutchar(void);
@@ -57,26 +61,50 @@ GeneratorC::genFooter(void)
 
 
 inline void
-GeneratorC::genPtrAdd(unsigned int value)
+GeneratorC::genNext(void)
 {
   genIndent();
-  if (value == 1) {
-    std::cout << "ptr++;\n";
-  } else {
-    std::cout << "ptr += " << value << ";\n";
-  }
+  std::cout << "ptr++;\n";
 }
 
 
 inline void
-GeneratorC::genPtrSub(unsigned int value)
+GeneratorC::genPrev(void)
 {
   genIndent();
-  if (value == 1) {
-    std::cout << "ptr--;\n";
-  } else {
-    std::cout << "ptr -= " << value << ";\n";
-  }
+  std::cout << "ptr--;\n";
+}
+
+
+inline void
+GeneratorC::genNextN(unsigned int value)
+{
+  genIndent();
+  std::cout << "ptr += " << value << ";\n";
+}
+
+
+inline void
+GeneratorC::genPrevN(unsigned int value)
+{
+  genIndent();
+  std::cout << "ptr -= " << value << ";\n";
+}
+
+
+inline void
+GeneratorC::genInc(void)
+{
+  genIndent();
+  std::cout << "(*ptr)++;\n";
+}
+
+
+inline void
+GeneratorC::genDec(void)
+{
+  genIndent();
+  std::cout << "(*ptr)--;\n";
 }
 
 
@@ -84,11 +112,7 @@ inline void
 GeneratorC::genAdd(unsigned int value)
 {
   genIndent();
-  if (value == 1) {
-    std::cout << "(*ptr)++;\n";
-  } else {
-    std::cout << "*ptr += " << value << ";\n";
-  }
+  std::cout << "*ptr += " << value << ";\n";
 }
 
 
@@ -96,11 +120,7 @@ inline void
 GeneratorC::genSub(unsigned int value)
 {
   genIndent();
-  if (value == 1) {
-    std::cout << "(*ptr)--;\n";
-  } else {
-    std::cout << "*ptr -= " << value << ";\n";
-  }
+  std::cout << "*ptr -= " << value << ";\n";
 }
 
 

@@ -12,8 +12,8 @@ class GeneratorRuby : public SourceGenerator {
 protected:
   inline void genHeader(void);
   inline void genFooter(void);
-  inline void genPtrAdd(unsigned int value);
-  inline void genPtrSub(unsigned int value);
+  inline void genNextN(unsigned int value);
+  inline void genPrevN(unsigned int value);
   inline void genAdd(unsigned int value);
   inline void genSub(unsigned int value);
   inline void genPutchar(void);
@@ -50,7 +50,7 @@ GeneratorRuby::genFooter(void)
 
 
 inline void
-GeneratorRuby::genPtrAdd(unsigned int value)
+GeneratorRuby::genNextN(unsigned int value)
 {
   genIndent();
   std::cout << "idx += " << value << "\n";
@@ -64,7 +64,7 @@ GeneratorRuby::genPtrAdd(unsigned int value)
 
 
 inline void
-GeneratorRuby::genPtrSub(unsigned int value)
+GeneratorRuby::genPrevN(unsigned int value)
 {
   genIndent();
   std::cout << "idx -= " << value << "\n";

@@ -351,11 +351,23 @@ Brainfuck::compileExecute(void) const
   BfIR::size_type size = irCompiler.getSize();
   for (unsigned int pc = 0; pc < size; pc++) {
     switch (irCode[pc].type) {
-      case BfInstruction::PTR_ADD:
+      case BfInstruction::NEXT:
+        ptr++;
+        break;
+      case BfInstruction::PREV:
+        ptr--;
+        break;
+      case BfInstruction::NEXT_N:
         ptr += irCode[pc].value;
         break;
-      case BfInstruction::PTR_SUB:
+      case BfInstruction::PREV_N:
         ptr -= irCode[pc].value;
+        break;
+      case BfInstruction::INC:
+        (*ptr)++;
+        break;
+      case BfInstruction::DEC:
+        (*ptr)--;
         break;
       case BfInstruction::ADD:
         *ptr += irCode[pc].value;

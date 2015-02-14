@@ -36,11 +36,21 @@ BfIRCompiler::compile(void)
           srcptr++;
           int value = compressInstruction<'>', '<'>(&srcptr) + 1;
           if (value > 0) {
-            cmd.type = BfInstruction::PTR_ADD;
-            cmd.value = value;
+            if (value == 1) {
+              cmd.type = BfInstruction::NEXT;
+              cmd.value = 0;
+            } else {
+              cmd.type = BfInstruction::NEXT_N;
+              cmd.value = value;
+            }
           } else if (value < 0) {
-            cmd.type = BfInstruction::PTR_SUB;
-            cmd.value = -value;
+            if (value == -1) {
+              cmd.type = BfInstruction::PREV;
+              cmd.value = 0;
+            } else {
+              cmd.type = BfInstruction::PREV_N;
+              cmd.value = -value;
+            }
           } else {
             continue;
           }
@@ -51,11 +61,21 @@ BfIRCompiler::compile(void)
           srcptr++;
           int value = compressInstruction<'<', '>'>(&srcptr) + 1;
           if (value > 0) {
-            cmd.type = BfInstruction::PTR_SUB;
-            cmd.value = value;
+            if (value == 1) {
+              cmd.type = BfInstruction::PREV;
+              cmd.value = 0;
+            } else {
+              cmd.type = BfInstruction::PREV_N;
+              cmd.value = value;
+            }
           } else if (value < 0) {
-            cmd.type = BfInstruction::PTR_ADD;
-            cmd.value = -value;
+            if (value == 1) {
+              cmd.type = BfInstruction::NEXT;
+              cmd.value = 0;
+            } else {
+              cmd.type = BfInstruction::NEXT_N;
+              cmd.value = -value;
+            }
           } else {
             continue;
           }
@@ -66,11 +86,21 @@ BfIRCompiler::compile(void)
           srcptr++;
           int value = compressInstruction<'+', '-'>(&srcptr) + 1;
           if (value > 0) {
-            cmd.type = BfInstruction::ADD;
-            cmd.value = value;
+            if (value == 1) {
+              cmd.type = BfInstruction::INC;
+              cmd.value = 0;
+            } else {
+              cmd.type = BfInstruction::ADD;
+              cmd.value = value;
+            }
           } else if (value < 0) {
-            cmd.type = BfInstruction::SUB;
-            cmd.value = -value;
+            if (value == 1) {
+              cmd.type = BfInstruction::DEC;
+              cmd.value = 0;
+            } else {
+              cmd.type = BfInstruction::SUB;
+              cmd.value = -value;
+            }
           } else {
             continue;
           }
@@ -81,11 +111,21 @@ BfIRCompiler::compile(void)
           srcptr++;
           int value = compressInstruction<'-', '+'>(&srcptr) + 1;
           if (value > 0) {
-            cmd.type = BfInstruction::SUB;
-            cmd.value = value;
+            if (value == 1) {
+              cmd.type = BfInstruction::DEC;
+              cmd.value = 0;
+            } else {
+              cmd.type = BfInstruction::SUB;
+              cmd.value = value;
+            }
           } else if (value < 0) {
-            cmd.type = BfInstruction::ADD;
-            cmd.value = -value;
+            if (value == 1) {
+              cmd.type = BfInstruction::INC;
+              cmd.value = 0;
+            } else {
+              cmd.type = BfInstruction::ADD;
+              cmd.value = -value;
+            }
           } else {
             continue;
           }
@@ -181,11 +221,8 @@ BfIRCompiler::compile(void)
         loopStack.pop();
         break;
     }
-    // std::cout << dumpEnum(cmd.type) << "  :  " << static_cast<int>(cmd.value) << std::endl;
     irCode.push_back(cmd);
   }
-  // exit(1);
-  // std::cout << "END: parse" << std::endl;
 }
 
 

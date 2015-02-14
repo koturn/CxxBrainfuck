@@ -42,11 +42,23 @@ BinaryGenerator::genCode(void)
   genPlorogue();
   for (BfIR::const_iterator cmd = irCode.begin(), end = irCode.end(); cmd != end; cmd++) {
     switch (cmd->type) {
-      case BfInstruction::PTR_ADD:
-        genPtrAdd(cmd->value);
+      case BfInstruction::NEXT:
+        genNext();
         break;
-      case BfInstruction::PTR_SUB:
-        genPtrSub(cmd->value);
+      case BfInstruction::PREV:
+        genPrev();
+        break;
+      case BfInstruction::NEXT_N:
+        genNextN(cmd->value);
+        break;
+      case BfInstruction::PREV_N:
+        genPrevN(cmd->value);
+        break;
+      case BfInstruction::INC:
+        genInc();
+        break;
+      case BfInstruction::DEC:
+        genDec();
         break;
       case BfInstruction::ADD:
         genAdd(cmd->value);

@@ -17,8 +17,8 @@ private:
   inline void genEpirogue(void);
   inline void genHeader(void);
   inline void genFooter(void);
-  inline void genPtrAdd(unsigned int value);
-  inline void genPtrSub(unsigned int value);
+  inline void genNextN(unsigned int value);
+  inline void genPrevN(unsigned int value);
   inline void genAdd(unsigned int value);
   inline void genSub(unsigned int value);
   inline void genPutchar(void);
@@ -183,7 +183,7 @@ GeneratorElfX64::genFooter(void)
 
 
 inline void
-GeneratorElfX64::genPtrAdd(unsigned int value)
+GeneratorElfX64::genNextN(unsigned int value)
 {
   for (unsigned int i = 0; i < value; i++) {
     *codePtr++ = 0x48; *codePtr++ = 0xff; *codePtr++ = 0xc3;  // inc rbx
@@ -192,7 +192,7 @@ GeneratorElfX64::genPtrAdd(unsigned int value)
 
 
 inline void
-GeneratorElfX64::genPtrSub(unsigned int value)
+GeneratorElfX64::genPrevN(unsigned int value)
 {
   for (unsigned int i = 0; i < value; i++) {
     *codePtr++ = 0x48; *codePtr++ = 0xff; *codePtr++ = 0xcb;  // dec rbx

@@ -64,25 +64,29 @@ BfJitCompiler::compile(void)
   std::stack<int> keepLabelNo;
   for (BfIR::const_iterator cmd = irCode.begin(), end = irCode.end(); cmd != end; cmd++) {
     switch (cmd->type) {
-      case BfInstruction::ADD:
-        if (cmd->value == 1) {
-          inc(cur);
-        } else {
-          add(cur, cmd->value);
-        }
+      case BfInstruction::NEXT:
+        add(stack, 4);
         break;
-      case BfInstruction::SUB:
-        if (cmd->value == 1) {
-          dec(cur);
-        } else {
-          sub(cur, cmd->value);
-        }
+      case BfInstruction::PREV:
+        sub(stack, 4);
         break;
-      case BfInstruction::PTR_ADD:
+      case BfInstruction::NEXT_N:
         add(stack, 4 * cmd->value);
         break;
-      case BfInstruction::PTR_SUB:
+      case BfInstruction::PREV_N:
         sub(stack, 4 * cmd->value);
+        break;
+      case BfInstruction::INC:
+        inc(cur);
+        break;
+      case BfInstruction::DEC:
+        dec(cur);
+        break;
+      case BfInstruction::ADD:
+        add(cur, cmd->value);
+        break;
+      case BfInstruction::SUB:
+        sub(cur, cmd->value);
         break;
       case BfInstruction::PUTCHAR:
 #ifdef XBYAK32

@@ -12,8 +12,8 @@ class GeneratorLua : public SourceGenerator {
 protected:
   inline void genHeader(void);
   inline void genFooter(void);
-  inline void genPtrAdd(unsigned int value);
-  inline void genPtrSub(unsigned int value);
+  inline void genNextN(unsigned int value);
+  inline void genPrevN(unsigned int value);
   inline void genAdd(unsigned int value);
   inline void genSub(unsigned int value);
   inline void genPutchar(void);
@@ -49,7 +49,7 @@ GeneratorLua::genFooter(void)
 
 
 inline void
-GeneratorLua::genPtrAdd(unsigned int value)
+GeneratorLua::genNextN(unsigned int value)
 {
   genIndent();
   std::cout << "idx = idx + " << value << "\n";
@@ -63,7 +63,7 @@ GeneratorLua::genPtrAdd(unsigned int value)
 
 
 inline void
-GeneratorLua::genPtrSub(unsigned int value)
+GeneratorLua::genPrevN(unsigned int value)
 {
   genIndent();
   std::cout << "idx = idx - " << value << "\n";

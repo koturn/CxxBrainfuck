@@ -12,8 +12,12 @@ class GeneratorCpp : public SourceGenerator {
 private:
   inline void genHeader(void);
   inline void genFooter(void);
-  inline void genPtrAdd(unsigned int value);
-  inline void genPtrSub(unsigned int value);
+  inline void genNext(void);
+  inline void genPrev(void);
+  inline void genNextN(unsigned int value);
+  inline void genPrevN(unsigned int value);
+  inline void genInc(void);
+  inline void genDec(void);
   inline void genAdd(unsigned int value);
   inline void genSub(unsigned int value);
   inline void genPutchar(void);
@@ -59,14 +63,10 @@ GeneratorCpp::genFooter(void)
 
 
 inline void
-GeneratorCpp::genPtrAdd(unsigned int value)
+GeneratorCpp::genNext(void)
 {
   genIndent();
-  if (value == 1) {
-    std::cout << "idx++;\n";
-  } else {
-    std::cout << "idx += " << value << ";\n";
-  }
+  std::cout << "idx++;\n";
   genIndent();
   std::cout << "while (idx >= memory.size()) {\n";
   genIndent();
@@ -77,14 +77,48 @@ GeneratorCpp::genPtrAdd(unsigned int value)
 
 
 inline void
-GeneratorCpp::genPtrSub(unsigned int value)
+GeneratorCpp::genPrev(void)
 {
   genIndent();
-  if (value == 1) {
-    std::cout << "idx--;\n";
-  } else {
-    std::cout << "idx -= " << value << ";\n";
-  }
+  std::cout << "idx--;\n";
+}
+
+
+inline void
+GeneratorCpp::genNextN(unsigned int value)
+{
+  genIndent();
+  std::cout << "idx += " << value << ";\n";
+  genIndent();
+  std::cout << "while (idx >= memory.size()) {\n";
+  genIndent();
+  std::cout << indent << "memory.resize(memory.size() * 2);\n";
+  genIndent();
+  std::cout << "}\n";
+}
+
+
+inline void
+GeneratorCpp::genPrevN(unsigned int value)
+{
+  genIndent();
+  std::cout << "idx -= " << value << ";\n";
+}
+
+
+inline void
+GeneratorCpp::genInc(void)
+{
+  genIndent();
+  std::cout << "memory[idx]++;\n";
+}
+
+
+inline void
+GeneratorCpp::genDec(void)
+{
+  genIndent();
+  std::cout << "memory[idx]--;\n";
 }
 
 
@@ -92,11 +126,7 @@ inline void
 GeneratorCpp::genAdd(unsigned int value)
 {
   genIndent();
-  if (value == 1) {
-    std::cout << "memory[idx]++;\n";
-  } else {
-    std::cout << "memory[idx] += " << value << ";\n";
-  }
+  std::cout << "memory[idx] += " << value << ";\n";
 }
 
 
@@ -104,11 +134,7 @@ inline void
 GeneratorCpp::genSub(unsigned int value)
 {
   genIndent();
-  if (value == 1) {
-    std::cout << "memory[idx]--;\n";
-  } else {
-    std::cout << "memory[idx] -= " << value << ";\n";
-  }
+  std::cout << "memory[idx] -= " << value << ";\n";
 }
 
 

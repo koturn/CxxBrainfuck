@@ -25,8 +25,20 @@ protected:
   unsigned char *codePtr;
   virtual void genHeader(void) = 0;
   virtual void genFooter(void) = 0;
-  virtual void genPtrAdd(unsigned int value) = 0;
-  virtual void genPtrSub(unsigned int value) = 0;
+  virtual void genNext(void) {
+    genNextN(1);
+  }
+  virtual void genPrev(void) {
+    genPrevN(1);
+  }
+  virtual void genNextN(unsigned int value) = 0;
+  virtual void genPrevN(unsigned int value) = 0;
+  virtual void genInc(void) {
+    genAdd(1);
+  }
+  virtual void genDec(void) {
+    genSub(1);
+  }
   virtual void genAdd(unsigned int value) = 0;
   virtual void genSub(unsigned int value) = 0;
   virtual void genPutchar(void) = 0;
@@ -36,26 +48,74 @@ protected:
   virtual void genAssign(unsigned int value)
   {
     genLoopStart();
-    genSub(1);
+    genDec();
     genLoopEnd();
     genAdd(value);
   }
   virtual void genAddVar(int value)
   {
     genLoopStart();
-    genSub(1);
-    value >= 0 ? genPtrAdd(value) : genPtrSub(-value);
-    genAdd(1);
-    value >= 0 ? genPtrSub(value) : genPtrAdd(-value);
+    genDec();
+    if (value > 0) {
+      if (value == 1) {
+        genNext();
+      } else {
+        genNextN(value);
+      }
+    } else {
+      if (value == -1) {
+        genPrev();
+      } else {
+        genPrevN(-value);
+      }
+    }
+    genInc();
+    if (value > 0) {
+      if (value == 1) {
+        genPrev();
+      } else {
+        genPrevN(value);
+      }
+    } else {
+      if (value == -1) {
+        genNext();
+      } else {
+        genNextN(-value);
+      }
+    }
     genLoopEnd();
   }
   virtual void genSubVar(int value)
   {
     genLoopStart();
-    genSub(1);
-    value >= 0 ? genPtrAdd(value) : genPtrSub(-value);
-    genSub(1);
-    value >= 0 ? genPtrSub(value) : genPtrAdd(-value);
+    genDec();
+    if (value > 0) {
+      if (value == 1) {
+        genNext();
+      } else {
+        genNextN(value);
+      }
+    } else {
+      if (value == -1) {
+        genPrev();
+      } else {
+        genPrevN(-value);
+      }
+    }
+    genDec();
+    if (value > 0) {
+      if (value == 1) {
+        genPrev();
+      } else {
+        genPrevN(value);
+      }
+    } else {
+      if (value == -1) {
+        genNext();
+      } else {
+        genNextN(-value);
+      }
+    }
     genLoopEnd();
   }
 public:

@@ -12,8 +12,12 @@ class GeneratorJava : public SourceGenerator {
 protected:
   inline void genHeader(void);
   inline void genFooter(void);
-  inline void genPtrAdd(unsigned int value);
-  inline void genPtrSub(unsigned int value);
+  inline void genNext(void);
+  inline void genPrev(void);
+  inline void genNextN(unsigned int value);
+  inline void genPrevN(unsigned int value);
+  inline void genInc(void);
+  inline void genDec(void);
   inline void genAdd(unsigned int value);
   inline void genSub(unsigned int value);
   inline void genPutchar(void);
@@ -53,26 +57,50 @@ GeneratorJava::genFooter(void)
 
 
 inline void
-GeneratorJava::genPtrAdd(unsigned int value)
+GeneratorJava::genNext(void)
 {
   genIndent();
-  if (value == 1) {
-    std::cout << "idx++;\n";
-  } else {
-    std::cout << "idx += " << value << ";\n";
-  }
+  std::cout << "idx++;\n";
 }
 
 
 inline void
-GeneratorJava::genPtrSub(unsigned int value)
+GeneratorJava::genPrev(void)
 {
   genIndent();
-  if (value == 1) {
-    std::cout << "idx--;\n";
-  } else {
-    std::cout << "idx -= " << value << ";\n";
-  }
+  std::cout << "idx--;\n";
+}
+
+
+inline void
+GeneratorJava::genNextN(unsigned int value)
+{
+  genIndent();
+  std::cout << "idx += " << value << ";\n";
+}
+
+
+inline void
+GeneratorJava::genPrevN(unsigned int value)
+{
+  genIndent();
+  std::cout << "idx -= " << value << ";\n";
+}
+
+
+inline void
+GeneratorJava::genInc(void)
+{
+  genIndent();
+  std::cout << "memory[idx]++;\n";
+}
+
+
+inline void
+GeneratorJava::genDec(void)
+{
+  genIndent();
+  std::cout << "memory[idx]--;\n";
 }
 
 
@@ -80,11 +108,7 @@ inline void
 GeneratorJava::genAdd(unsigned int value)
 {
   genIndent();
-  if (value == 1) {
-    std::cout << "memory[idx]++;\n";
-  } else {
-    std::cout << "memory[idx] += " << value << ";\n";
-  }
+  std::cout << "memory[idx] += " << value << ";\n";
 }
 
 
@@ -92,11 +116,7 @@ inline void
 GeneratorJava::genSub(unsigned int value)
 {
   genIndent();
-  if (value == 1) {
-    std::cout << "memory[idx]--;\n";
-  } else {
-    std::cout << "memory[idx] -= " << value << ";\n";
-  }
+  std::cout << "memory[idx] -= " << value << ";\n";
 }
 
 
