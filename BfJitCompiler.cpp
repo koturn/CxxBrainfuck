@@ -88,6 +88,26 @@ BfJitCompiler::compile(void)
       case BfInstruction::SUB:
         sub(cur, cmd->value1);
         break;
+      case BfInstruction::INC_AT:
+        add(stack, 4 * cmd->value1);
+        inc(cur);
+        sub(stack, 4 * cmd->value1);
+        break;
+      case BfInstruction::DEC_AT:
+        add(stack, 4 * cmd->value1);
+        dec(cur);
+        sub(stack, 4 * cmd->value1);
+        break;
+      case BfInstruction::ADD_AT:
+        add(stack, 4 * cmd->value1);
+        add(cur, cmd->value2);
+        sub(stack, 4 * cmd->value1);
+        break;
+      case BfInstruction::SUB_AT:
+        add(stack, 4 * cmd->value1);
+        sub(cur, cmd->value2);
+        sub(stack, 4 * cmd->value1);
+        break;
       case BfInstruction::PUTCHAR:
 #ifdef XBYAK32
         push(cur);
@@ -129,8 +149,33 @@ BfJitCompiler::compile(void)
           L(toStr(no, F));
         }
         break;
+      case BfInstruction::ASSIGN_ZERO:
+        mov(cur, 0);
+        break;
       case BfInstruction::ASSIGN:
         mov(cur, cmd->value1);
+        break;
+      case BfInstruction::ASSIGN_AT:
+        add(stack, 4 * cmd->value1);
+        mov(cur, cmd->value2);
+        sub(stack, 4 * cmd->value1);
+        break;
+      case BfInstruction::SEARCH_ZERO:
+        // LOOP_START
+        L(toStr(labelNo, B));
+        mov(eax, cur);
+        test(eax, eax);
+        jz(toStr(labelNo, F), Xbyak::CodeGenerator::T_NEAR);
+        keepLabelNo.push(labelNo++);
+        // NEXT_N / PREV_N
+        add(stack, 4 * cmd->value1);
+        // LOOP_END
+        {
+          int no = keepLabelNo.top();
+          keepLabelNo.pop();
+          jmp(toStr(no, B));
+          L(toStr(no, F));
+        }
         break;
       case BfInstruction::ADD_VAR:
         // LOOP_START
@@ -142,11 +187,11 @@ BfJitCompiler::compile(void)
         // SUB
         dec(cur);
         // PTR_ADD
-        add(stack, 4 * static_cast<int>(cmd->value1));
+        add(stack, 4 * cmd->value1);
         // ADD
         inc(cur);
         // PTR_SUB
-        sub(stack, 4 * static_cast<int>(cmd->value1));
+        sub(stack, 4 * cmd->value1);
         // LOOP_END
         {
           int no = keepLabelNo.top();
@@ -165,11 +210,11 @@ BfJitCompiler::compile(void)
         // SUB
         dec(cur);
         // PTR_ADD
-        add(stack, 4 * static_cast<int>(cmd->value1));
+        add(stack, 4 * cmd->value1);
         // SUB
         dec(cur);
         // PTR_SUB
-        sub(stack, 4 * static_cast<int>(cmd->value1));
+        sub(stack, 4 *cmd->value1);
         // LOOP_END
         {
           int no = keepLabelNo.top();
@@ -178,7 +223,43 @@ BfJitCompiler::compile(void)
           L(toStr(no, F));
         }
         break;
-      default:
+      case BfInstruction::CMUL_VAR:
+        // LOOP_START
+        L(toStr(labelNo, B));
+        mov(eax, cur);
+        test(eax, eax);
+        jz(toStr(labelNo, F), Xbyak::CodeGenerator::T_NEAR);
+        keepLabelNo.push(labelNo++);
+        // SUB
+        dec(cur);
+        // PTR_ADD
+        add(stack, 4 * cmd->value1);
+        // ADD
+        add(cur, cmd->value2);
+        // PTR_SUB
+        sub(stack, 4 * cmd->value1);
+        // LOOP_END
+        {
+          int no = keepLabelNo.top();
+          keepLabelNo.pop();
+          jmp(toStr(no, B));
+          L(toStr(no, F));
+        }
+        break;
+      case BfInstruction::INF_LOOP:
+        // LOOP_START
+        L(toStr(labelNo, B));
+        mov(eax, cur);
+        test(eax, eax);
+        jz(toStr(labelNo, F), Xbyak::CodeGenerator::T_NEAR);
+        keepLabelNo.push(labelNo++);
+        // LOOP_END
+        {
+          int no = keepLabelNo.top();
+          keepLabelNo.pop();
+          jmp(toStr(no, B));
+          L(toStr(no, F));
+        }
         break;
     }
   }

@@ -20,13 +20,21 @@ private:
   inline void genDec(void);
   inline void genAdd(int value);
   inline void genSub(int value);
+  inline void genIncAt(int value);
+  inline void genDecAt(int value1);
+  inline void genAddAt(int value1, int value2);
+  inline void genSubAt(int value1, int value2);
   inline void genPutchar(void);
   inline void genGetchar(void);
   inline void genLoopStart(void);
   inline void genLoopEnd(void);
   inline void genAssign(int value);
+  inline void genAssignAt(int value1, int value2);
+  inline void genSearchZero(int value);
   inline void genAddVar(int value);
   inline void genSubVar(int value);
+  inline void genCmulVar(int value1, int value2);
+  inline void genInfLoop(void);
 public:
   GeneratorC(BfIR irCode, std::size_t codeSize=DEFAULT_MAX_CODE_SIZE,
       const char *indent="  ") :
@@ -125,6 +133,58 @@ GeneratorC::genSub(int value)
 
 
 inline void
+GeneratorC::genIncAt(int value)
+{
+  genIndent();
+  if (value > 0) {
+    std::cout << "(*(ptr + " << value;
+  } else {
+    std::cout << "(*(ptr - " << -value;
+  }
+  std::cout << "))++;\n";
+}
+
+
+inline void
+GeneratorC::genDecAt(int value)
+{
+  genIndent();
+  if (value > 0) {
+    std::cout << "(*(ptr + " << value;
+  } else {
+    std::cout << "(*(ptr - " << -value;
+  }
+  std::cout << "))--;\n";
+}
+
+
+inline void
+GeneratorC::genAddAt(int value1, int value2)
+{
+  genIndent();
+  if (value1 > 0) {
+    std::cout << "*(ptr + " << value1 << ") ";
+  } else {
+    std::cout << "*(ptr - " << -value1 << ") ";
+  }
+  std::cout << "+= " << value2 << ";\n";
+}
+
+
+inline void
+GeneratorC::genSubAt(int value1, int value2)
+{
+  genIndent();
+  if (value1 > 0) {
+    std::cout << "*(ptr + " << value1 << ") ";
+  } else {
+    std::cout << "*(ptr - " << -value1 << ") ";
+  }
+  std::cout << "-= " << value2 << ";\n";
+}
+
+
+inline void
 GeneratorC::genPutchar(void)
 {
   genIndent();
@@ -167,16 +227,50 @@ GeneratorC::genAssign(int value)
 
 
 inline void
+GeneratorC::genAssignAt(int value1, int value2)
+{
+  genIndent();
+  if (value1 > 0) {
+    std::cout << "*(ptr + " << value1 << ") ";
+  } else {
+    std::cout << "*(ptr - " << -value1 << ") ";
+  }
+  std::cout << "= " << value2 << ";\n";
+}
+
+
+inline void
+GeneratorC::genSearchZero(int value)
+{
+  genIndent();
+  std::cout << "while (*ptr) {\n";
+  genIndent(); std::cout << indent;
+  if (value == 1) {
+    std::cout << "ptr++;\n";
+  } else if (value == -1) {
+    std::cout << "ptr--;\n";
+  } else if (value > 0) {
+    std::cout << "ptr += " << value << ";\n";
+  } else if (value < 0) {
+    std::cout << "ptr -= " << value << ";\n";
+  }
+  genIndent();
+  std::cout << "}\n";
+}
+
+
+inline void
 GeneratorC::genAddVar(int value)
 {
   genIndent();
   std::cout << "if (*ptr) {\n";
-  genIndent();
+  genIndent(); std::cout << indent;
   if (value >= 0) {
-    std::cout << indent << "*(ptr + " <<  value << ") += *ptr;\n";
+    std::cout << "*(ptr + " <<  value;
   } else {
-    std::cout << indent << "*(ptr - " << -value << ") += *ptr;\n";
+    std::cout << "*(ptr - " << -value;
   }
+  std::cout << ") += *ptr;\n";
   genIndent();
   std::cout << indent << "*ptr = 0;\n";
   genIndent();
@@ -189,14 +283,46 @@ GeneratorC::genSubVar(int value)
 {
   genIndent();
   std::cout << "if (*ptr) {\n";
-  genIndent();
+  genIndent(); std::cout << indent;
   if (value >= 0) {
-    std::cout << indent << "*(ptr + " <<  value << ") -= *ptr;\n";
+    std::cout << "*(ptr + " <<  value;
   } else {
-    std::cout << indent << "*(ptr - " << -value << ") -= *ptr;\n";
+    std::cout << "*(ptr - " << -value;
   }
+  std::cout << ") -= *ptr;\n";;
   genIndent();
   std::cout << indent << "*ptr = 0;\n";
+  genIndent();
+  std::cout << "}\n";
+}
+
+
+inline void
+GeneratorC::genCmulVar(int value1, int value2)
+{
+  genIndent();
+  std::cout << "if (*ptr) {\n";
+  genIndent(); std::cout << indent;
+  if (value1 >= 0) {
+    std::cout << "*(ptr + " <<  value1;
+  } else {
+    std::cout << "*(ptr - " << -value1;
+  }
+  std::cout << ") += *ptr * " << value2 << ";\n";
+  genIndent();
+  std::cout << indent << "*ptr = 0;\n";
+  genIndent();
+  std::cout << "}\n";
+}
+
+
+inline void
+GeneratorC::genInfLoop(void)
+{
+  genIndent();
+  std::cout << "if (*ptr) {\n";
+  genIndent();
+  std::cout << indent << "for (;;);\n";
   genIndent();
   std::cout << "}\n";
 }

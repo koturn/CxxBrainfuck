@@ -375,6 +375,18 @@ Brainfuck::compileExecute(void) const
       case BfInstruction::SUB:
         *ptr -= irCode[pc].value1;
         break;
+      case BfInstruction::INC_AT:
+        (*(ptr + irCode[pc].value1))++;
+        break;
+      case BfInstruction::DEC_AT:
+        (*(ptr + irCode[pc].value1))--;
+        break;
+      case BfInstruction::ADD_AT:
+        *(ptr + irCode[pc].value1) += irCode[pc].value2;
+        break;
+      case BfInstruction::SUB_AT:
+        *(ptr + irCode[pc].value1) -= irCode[pc].value2;
+        break;
       case BfInstruction::PUTCHAR:
         std::cout.put(static_cast<char>(*ptr));
         break;
@@ -391,8 +403,22 @@ Brainfuck::compileExecute(void) const
           pc = irCode[pc].value1;
         }
         break;
+      case BfInstruction::ASSIGN_ZERO:
+        *ptr = 0;
+        break;
       case BfInstruction::ASSIGN:
         *ptr = irCode[pc].value1;
+        break;
+      case BfInstruction::ASSIGN_AT:
+        *(ptr + irCode[pc].value1) = irCode[pc].value2;
+        break;
+      case BfInstruction::SEARCH_ZERO:
+        {
+          int offset = irCode[pc].value1;
+          while (*ptr) {
+            ptr += offset;
+          }
+        }
         break;
       case BfInstruction::ADD_VAR:
         if (*ptr) {
@@ -415,6 +441,16 @@ Brainfuck::compileExecute(void) const
           ptr -= irCode[pc].value1;
         }
         break;
+      case BfInstruction::CMUL_VAR:
+        if (*ptr) {
+          *(ptr + irCode[pc].value1) += *ptr * irCode[pc].value2;
+          *ptr = 0;
+        }
+        break;
+      case BfInstruction::INF_LOOP:
+        if (*ptr) {
+          for (;;);
+        }
     }
   }
   delete[] memory;

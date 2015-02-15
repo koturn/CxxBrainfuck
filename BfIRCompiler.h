@@ -21,13 +21,16 @@ public:
   typedef enum {
     NEXT, PREV, NEXT_N, PREV_N,
     INC, DEC, ADD, SUB,
+    INC_AT, DEC_AT, ADD_AT, SUB_AT,
     PUTCHAR, GETCHAR,
     LOOP_START, LOOP_END,
-    ASSIGN, ADD_VAR, SUB_VAR, CMUL_VAR
+    ASSIGN_ZERO, ASSIGN, ASSIGN_AT, SEARCH_ZERO,
+    ADD_VAR, SUB_VAR, CMUL_VAR,
+    INF_LOOP
   } Instruction;
 
   struct Command {
-    Instruction  type;
+    Instruction type;
     int value1;
     int value2;
   };

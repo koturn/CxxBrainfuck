@@ -40,49 +40,7 @@ inline void
 BinaryGenerator::genCode(void)
 {
   genPlorogue();
-  for (BfIR::const_iterator cmd = irCode.begin(), end = irCode.end(); cmd != end; cmd++) {
-    switch (cmd->type) {
-      case BfInstruction::NEXT:
-        genNext();
-        break;
-      case BfInstruction::PREV:
-        genPrev();
-        break;
-      case BfInstruction::NEXT_N:
-        genNextN(cmd->value1);
-        break;
-      case BfInstruction::PREV_N:
-        genPrevN(cmd->value1);
-        break;
-      case BfInstruction::INC:
-        genInc();
-        break;
-      case BfInstruction::DEC:
-        genDec();
-        break;
-      case BfInstruction::ADD:
-        genAdd(cmd->value1);
-        break;
-      case BfInstruction::SUB:
-        genSub(cmd->value1);
-        break;
-      case BfInstruction::PUTCHAR:
-        genPutchar();
-        break;
-      case BfInstruction::GETCHAR:
-        genGetchar();
-        break;
-      case BfInstruction::LOOP_START:
-        genLoopStart();
-        break;
-      case BfInstruction::LOOP_END:
-        genLoopEnd();
-        break;
-      case BfInstruction::ASSIGN:
-        genAssign(cmd->value1);
-        break;
-    }
-  }
+  genMainCode();
   genEpirogue();
   genHeader();
   genFooter();
