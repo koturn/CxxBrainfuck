@@ -118,6 +118,10 @@ Use [msvc.mk](msvc.mk).
 - [Brainfuck](http://en.wikipedia.org/wiki/Brainfuck)
 - [hayamiz/dbtimes-vol01](https://github.com/hayamiz/dbtimes-vol01)
 - [7shi/bfexe](https://github.com/7shi/bfexe)
+- [hogelog/fast-bf](https://github.com/hogelog/fast-bf)
+- [alex pankratov](http://www.swapped.cc/#!/bff)
+- [Oleg Mazonka - Languages - Brainfuck](http://mazonka.com/brainf/)
+- [brainfuck optimization strategies |  matslina](http://calmerthanyouare.org/2015/01/07/optimizing-brainfuck.html)
 - [簡易brainf*ckコンパイラを作る part3 - わらばんし仄聞記](http://warabanshi.hatenablog.com/entry/2013/01/05/131602)
 - [実用Brainf*ckプログラミング](http://www.slideshare.net/KMC_JP/brainfck)
 
