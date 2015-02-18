@@ -190,30 +190,14 @@ CodeGenerator::genDec(void)
 inline void
 CodeGenerator::genIncAt(int value)
 {
-  if (value > 0) {
-    genNextN(value);
-    genInc();
-    genPrevN(value);
-  } else {
-    genPrevN(-value);
-    genInc();
-    genNextN(-value);
-  }
+  genAddAt(value, 1);
 }
 
 
 inline void
 CodeGenerator::genDecAt(int value)
 {
-  if (value > 0) {
-    genNextN(value);
-    genDec();
-    genPrevN(value);
-  } else {
-    genPrevN(-value);
-    genDec();
-    genNextN(-value);
-  }
+  genSubAt(value, 1);
 }
 
 

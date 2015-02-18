@@ -47,9 +47,21 @@ public:
 inline void
 GeneratorC::genHeader(void)
 {
-  std::cout << "#include <stdio.h>\n"
+  std::cout << "#include <memory.h>\n"
+               "#include <stdio.h>\n"
                "#include <stdlib.h>\n\n"
                "#define MEMORY_SIZE 65536\n\n"
+               "#if (defined _MSC_VER) || (defined __INTEL_COMPILER)\n"
+               "#  define INLINE  __forceinline\n"
+               "#elif (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L) || defined(__cplusplus)\n"
+               "#  define INLINE  inline\n"
+               "#else\n"
+               "#  define INLINE\n"
+               "#endif\n"
+               "#ifndef __GNUC__\n"
+               "INLINE static void *\n"
+               "memrchr(const void *s, int c, size_t n);\n"
+               "#endif\n\n\n"
                "int\n"
                "main(void)\n"
                "{\n"
@@ -63,7 +75,16 @@ GeneratorC::genFooter(void)
 {
   std::cout << "\n";
   std::cout << indent << "return EXIT_SUCCESS;\n"
-               "}"
+               "}\n\n\n"
+               "#ifndef __GNUC__\n"
+               "INLINE static void *\n"
+               "memrchr(const void *s, int c, size_t n)\n"
+               "{\n"
+            << indent << "const char *_s = (const char *) s;\n"
+            << indent << "for (; *((int *) _s) != c; _s--);\n"
+            << indent << "return (void *) _s;\n"
+               "}\n"
+               "#endif"
             << std::endl;
 }
 
@@ -163,11 +184,11 @@ GeneratorC::genAddAt(int value1, int value2)
 {
   genIndent();
   if (value1 > 0) {
-    std::cout << "*(ptr + " << value1 << ") ";
+    std::cout << "*(ptr + " << value1;
   } else {
-    std::cout << "*(ptr - " << -value1 << ") ";
+    std::cout << "*(ptr - " << -value1;
   }
-  std::cout << "+= " << value2 << ";\n";
+  std::cout << ") += " << value2 << ";\n";
 }
 
 
@@ -176,11 +197,11 @@ GeneratorC::genSubAt(int value1, int value2)
 {
   genIndent();
   if (value1 > 0) {
-    std::cout << "*(ptr + " << value1 << ") ";
+    std::cout << "*(ptr + " << value1;
   } else {
-    std::cout << "*(ptr - " << -value1 << ") ";
+    std::cout << "*(ptr - " << -value1;
   }
-  std::cout << "-= " << value2 << ";\n";
+  std::cout << ") -= " << value2 << ";\n";
 }
 
 
@@ -243,19 +264,15 @@ inline void
 GeneratorC::genSearchZero(int value)
 {
   genIndent();
-  std::cout << "while (*ptr) {\n";
-  genIndent(); std::cout << indent;
   if (value == 1) {
-    std::cout << "ptr++;\n";
+    std::cout << "ptr = memchr(ptr, 0, sizeof(memory));\n";
   } else if (value == -1) {
-    std::cout << "ptr--;\n";
+    std::cout << "ptr = memrchr(ptr, 0, sizeof(memory));\n";
   } else if (value > 0) {
-    std::cout << "ptr += " << value << ";\n";
+    std::cout << "for (; *ptr; ptr += " << value << ");\n";
   } else if (value < 0) {
-    std::cout << "ptr -= " << value << ";\n";
+    std::cout << "for (; *ptr; ptr -= " << value << ");\n";
   }
-  genIndent();
-  std::cout << "}\n";
 }
 
 
