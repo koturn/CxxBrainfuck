@@ -10,6 +10,8 @@ namespace bf {
 
 class GeneratorCpp : public SourceGenerator {
 private:
+  inline void genMemoryCheck(int value);
+private:
   inline void genHeader(void);
   inline void genFooter(void);
   inline void genNext(void);
@@ -20,13 +22,21 @@ private:
   inline void genDec(void);
   inline void genAdd(int value);
   inline void genSub(int value);
+  inline void genIncAt(int value);
+  inline void genDecAt(int value1);
+  inline void genAddAt(int value1, int value2);
+  inline void genSubAt(int value1, int value2);
   inline void genPutchar(void);
   inline void genGetchar(void);
   inline void genLoopStart(void);
   inline void genLoopEnd(void);
   inline void genAssign(int value);
+  inline void genAssignAt(int value1, int value2);
+  inline void genSearchZero(int value);
   inline void genAddVar(int value);
   inline void genSubVar(int value);
+  inline void genCmulVar(int value1, int value2);
+  inline void genInfLoop(void);
 public:
   GeneratorCpp(BfIR irCode, std::size_t codeSize=DEFAULT_MAX_CODE_SIZE,
       const char *indent="  ") :
@@ -67,12 +77,7 @@ GeneratorCpp::genNext(void)
 {
   genIndent();
   std::cout << "idx++;\n";
-  genIndent();
-  std::cout << "while (idx >= memory.size()) {\n";
-  genIndent();
-  std::cout << indent << "memory.resize(memory.size() * 2);\n";
-  genIndent();
-  std::cout << "}\n";
+  genMemoryCheck(0);
 }
 
 
@@ -89,12 +94,7 @@ GeneratorCpp::genNextN(int value)
 {
   genIndent();
   std::cout << "idx += " << value << ";\n";
-  genIndent();
-  std::cout << "while (idx >= memory.size()) {\n";
-  genIndent();
-  std::cout << indent << "memory.resize(memory.size() * 2);\n";
-  genIndent();
-  std::cout << "}\n";
+  genMemoryCheck(0);
 }
 
 
@@ -135,6 +135,66 @@ GeneratorCpp::genSub(int value)
 {
   genIndent();
   std::cout << "memory[idx] -= " << value << ";\n";
+}
+
+
+inline void
+GeneratorCpp::genIncAt(int value)
+{
+  if (value > 0) {
+    genMemoryCheck(value);
+    genIndent();
+    std::cout << "memory[idx + " << value;
+  } else {
+    genIndent();
+    std::cout << "memory[idx - " << -value;
+  }
+  std::cout << "]++;\n";
+}
+
+
+inline void
+GeneratorCpp::genDecAt(int value)
+{
+  if (value > 0) {
+    genMemoryCheck(value);
+    genIndent();
+    std::cout << "memory[idx + " << value;
+  } else {
+    genIndent();
+    std::cout << "memory[idx - " << -value;
+  }
+  std::cout << "]--;\n";
+}
+
+
+inline void
+GeneratorCpp::genAddAt(int value1, int value2)
+{
+  if (value1 > 0) {
+    genMemoryCheck(value1);
+    genIndent();
+    std::cout << "memory[idx + " << value1;
+  } else {
+    genIndent();
+    std::cout << "memory[idx - " << -value1;
+  }
+  std::cout << "] += " << value2 << ";\n";
+}
+
+
+inline void
+GeneratorCpp::genSubAt(int value1, int value2)
+{
+  if (value1 > 0) {
+    genMemoryCheck(value1);
+    genIndent();
+    std::cout << "memory[idx + " << value1;
+  } else {
+    genIndent();
+    std::cout << "memory[idx - " << -value1;
+  }
+  std::cout << "] -= " << value2 << ";\n";
 }
 
 
@@ -181,16 +241,61 @@ GeneratorCpp::genAssign(int value)
 
 
 inline void
+GeneratorCpp::genAssignAt(int value1, int value2)
+{
+  if (value1 > 0) {
+    genMemoryCheck(value1);
+    genIndent();
+    std::cout << "memory[idx + " << value1;
+  } else {
+    genIndent();
+    std::cout << "memory[idx - " << -value1;
+  }
+  std::cout << "] = " << value2 << ";\n";
+}
+
+
+inline void
+GeneratorCpp::genSearchZero(int value)
+{
+  genIndent();
+  if (value == 1) {
+    std::cout << "for (; memory[idx]; idx++) {\n";
+    indentLevel++;
+    genMemoryCheck(1);
+    indentLevel--;
+    genIndent();
+    std::cout << "}\n";
+  } else if (value == -1) {
+    std::cout << "for (; memory[idx]; idx--);\n";
+  } else if (value > 1) {
+    std::cout << "for (; memory[idx]; idx += " << value << ") {\n";
+    indentLevel++;
+    genMemoryCheck(value);
+    indentLevel--;
+    genIndent();
+    std::cout << "}\n";
+  } else if (value < 1) {
+    std::cout << "for (; memory[idx]; idx -= " << -value << ");\n";
+  }
+}
+
+
+inline void
 GeneratorCpp::genAddVar(int value)
 {
   genIndent();
   std::cout << "if (memory[idx]) {\n";
-  genIndent();
+  indentLevel++;
   if (value >= 0) {
-    std::cout << indent << "memory[idx + " <<  value << "] += memory[idx];\n";
+    genMemoryCheck(value);
+    genIndent();
+    std::cout << "memory[idx + " <<  value << "] += memory[idx];\n";
   } else {
-    std::cout << indent << "memory[idx - " << -value << "] += memory[idx];\n";
+    genIndent();
+    std::cout << "memory[idx - " << -value << "] += memory[idx];\n";
   }
+  indentLevel--;
   genIndent();
   std::cout << indent << "memory[idx] = 0;\n";
   genIndent();
@@ -203,14 +308,69 @@ GeneratorCpp::genSubVar(int value)
 {
   genIndent();
   std::cout << "if (memory[idx]) {\n";
-  genIndent();
+  indentLevel++;
   if (value >= 0) {
-    std::cout << indent << "memory[idx + " <<  value << "] -= memory[idx];\n";
+    genMemoryCheck(value);
+    genIndent();
+    std::cout << "memory[idx + " <<  value << "] -= memory[idx];\n";
   } else {
-    std::cout << indent << "memory[idx - " << -value << "] -= memory[idx];\n";
+    genIndent();
+    std::cout << "memory[idx - " << -value << "] -= memory[idx];\n";
   }
+  indentLevel--;
   genIndent();
   std::cout << indent << "memory[idx] = 0;\n";
+  genIndent();
+  std::cout << "}\n";
+}
+
+
+inline void
+GeneratorCpp::genCmulVar(int value1, int value2)
+{
+  genIndent();
+  std::cout << "if (memory[idx]) {\n";
+  indentLevel++;
+  if (value1 >= 0) {
+    genMemoryCheck(value1);
+    genIndent();
+    std::cout << "memory[idx + " <<  value1;
+  } else {
+    genIndent();
+    std::cout << "memory[idx - " << -value1;
+  }
+  indentLevel--;
+  std::cout << "] += memory[idx] * " << value2 << ";\n";
+  genIndent();
+  std::cout << indent << "memory[idx] = 0;\n";
+  genIndent();
+  std::cout << "}\n";
+}
+
+
+inline void
+GeneratorCpp::genInfLoop(void)
+{
+  genIndent();
+  std::cout << "if (memory[idx]) {\n";
+  genIndent();
+  std::cout << indent << "for (;;);\n";
+  genIndent();
+  std::cout << "}\n";
+}
+
+
+inline void
+GeneratorCpp::genMemoryCheck(int value)
+{
+  genIndent();
+  std::cout << "while (idx";
+  if (value > 0) {
+    std::cout << " + " << value;
+  }
+  std::cout << " >= memory.size()) {\n";
+  genIndent();
+  std::cout << indent << "memory.resize(memory.size() * 2);\n";
   genIndent();
   std::cout << "}\n";
 }

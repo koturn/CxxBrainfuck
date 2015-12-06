@@ -20,13 +20,21 @@ protected:
   inline void genDec(void);
   inline void genAdd(int value);
   inline void genSub(int value);
+  inline void genIncAt(int value);
+  inline void genDecAt(int value1);
+  inline void genAddAt(int value1, int value2);
+  inline void genSubAt(int value1, int value2);
   inline void genPutchar(void);
   inline void genGetchar(void);
   inline void genLoopStart(void);
   inline void genLoopEnd(void);
   inline void genAssign(int value);
+  inline void genAssignAt(int value1, int value2);
+  inline void genSearchZero(int value);
   inline void genAddVar(int value);
   inline void genSubVar(int value);
+  inline void genCmulVar(int value1, int value2);
+  inline void genInfLoop(void);
 public:
   GeneratorJava(BfIR irCode, std::size_t codeSize=DEFAULT_MAX_CODE_SIZE,
       const char *indent="    ") :
@@ -121,6 +129,58 @@ GeneratorJava::genSub(int value)
 
 
 inline void
+GeneratorJava::genIncAt(int value)
+{
+  genIndent();
+  if (value > 0) {
+    std::cout << "memory[idx + " << value;
+  } else {
+    std::cout << "memory[idx - " << -value;
+  }
+  std::cout << "]++;\n";
+}
+
+
+inline void
+GeneratorJava::genDecAt(int value)
+{
+  genIndent();
+  if (value > 0) {
+    std::cout << "memory[idx + " << value;
+  } else {
+    std::cout << "memory[idx - " << -value;
+  }
+  std::cout << "]--;\n";
+}
+
+
+inline void
+GeneratorJava::genAddAt(int value1, int value2)
+{
+  genIndent();
+  if (value1 > 0) {
+    std::cout << "memory[idx + " << value1;
+  } else {
+    std::cout << "memory[idx - " << -value1;
+  }
+  std::cout << "] += " << value2 << ";\n";
+}
+
+
+inline void
+GeneratorJava::genSubAt(int value1, int value2)
+{
+  genIndent();
+  if (value1 > 0) {
+    std::cout << "memory[idx + " << value1;
+  } else {
+    std::cout << "memory[idx - " << -value1;
+  }
+  std::cout << "] -= " << value2 << ";\n";
+}
+
+
+inline void
 GeneratorJava::genPutchar(void)
 {
   genIndent();
@@ -163,6 +223,36 @@ GeneratorJava::genAssign(int value)
 
 
 inline void
+GeneratorJava::genAssignAt(int value1, int value2)
+{
+  genIndent();
+  if (value1 > 0) {
+    std::cout << "memory[idx + " << value1;
+  } else {
+    std::cout << "memory[idx - " << -value1;
+  }
+  std::cout << "] = " << value2 << ";\n";
+}
+
+
+inline void
+GeneratorJava::genSearchZero(int value)
+{
+  genIndent();
+  std::cout << "for (; memory[idx] != 0; idx";
+  if (value == 1) {
+    std::cout << "++);\n";
+  } else if (value == -1) {
+    std::cout << "--);\n";
+  } else if (value > 1) {
+    std::cout << " += " << value << ");\n";
+  } else if (value < 1) {
+    std::cout << " -= " << -value << ");\n";
+  }
+}
+
+
+inline void
 GeneratorJava::genAddVar(int value)
 {
   genIndent();
@@ -193,6 +283,37 @@ GeneratorJava::genSubVar(int value)
   }
   genIndent();
   std::cout << indent << "memory[idx] = 0;\n";
+  genIndent();
+  std::cout << "}\n";
+}
+
+
+inline void
+GeneratorJava::genCmulVar(int value1, int value2)
+{
+  genIndent();
+  std::cout << "if (memory[idx] != 0) {\n";
+  genIndent(); std::cout << indent;
+  if (value1 >= 0) {
+    std::cout << "memory[idx + " <<  value1;
+  } else {
+    std::cout << "memory[idx - " << -value1;
+  }
+  std::cout << "] += memory[idx] * " << value2 << ";\n";
+  genIndent();
+  std::cout << indent << "memory[idx] = 0;\n";
+  genIndent();
+  std::cout << "}\n";
+}
+
+
+inline void
+GeneratorJava::genInfLoop(void)
+{
+  genIndent();
+  std::cout << "if (memory[idx] != 0) {\n";
+  genIndent();
+  std::cout << indent << "for (;;);\n";
   genIndent();
   std::cout << "}\n";
 }

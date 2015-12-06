@@ -182,7 +182,10 @@ BfIRCompiler::compile(void)
           int value = compressInstruction<'-', '+'>(&srcptr) + 1;
           if (irCode.size() > 0 && irCode[irCode.size() - 1].type == BfInstruction::ASSIGN_ZERO) {
             cmd.type = BfInstruction::ASSIGN;
-            cmd.value1 = -value;
+            while (value < 0) {
+              value += 256;
+            }
+            cmd.value1 = value;
             cmd.value2 = 0;
             irCode.pop_back();
           } else {

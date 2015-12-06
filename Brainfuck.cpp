@@ -382,10 +382,10 @@ Brainfuck::compileExecute(void) const
         (*(ptr + irCode[pc].value1))--;
         break;
       case BfInstruction::ADD_AT:
-        *(ptr + irCode[pc].value1) += irCode[pc].value2;
+        *(ptr + irCode[pc].value1) += static_cast<unsigned char>(irCode[pc].value2);
         break;
       case BfInstruction::SUB_AT:
-        *(ptr + irCode[pc].value1) -= irCode[pc].value2;
+        *(ptr + irCode[pc].value1) -= static_cast<unsigned char>(irCode[pc].value2);
         break;
       case BfInstruction::PUTCHAR:
         std::cout.put(static_cast<char>(*ptr));
@@ -407,10 +407,10 @@ Brainfuck::compileExecute(void) const
         *ptr = 0;
         break;
       case BfInstruction::ASSIGN:
-        *ptr = irCode[pc].value1;
+        *ptr = static_cast<unsigned char>(irCode[pc].value1);
         break;
       case BfInstruction::ASSIGN_AT:
-        *(ptr + irCode[pc].value1) = irCode[pc].value2;
+        *(ptr + irCode[pc].value1) = static_cast<unsigned char>(irCode[pc].value2);
         break;
       case BfInstruction::SEARCH_ZERO:
         {
@@ -436,9 +436,9 @@ Brainfuck::compileExecute(void) const
          */
         while (*ptr) {
           (*ptr)--;
-          ptr += irCode[pc].value1;
+          ptr += static_cast<unsigned char>(irCode[pc].value1);
           (*ptr)--;
-          ptr -= irCode[pc].value1;
+          ptr -= static_cast<unsigned char>(irCode[pc].value1);
         }
         break;
       case BfInstruction::CMUL_VAR:
