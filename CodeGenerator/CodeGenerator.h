@@ -263,7 +263,7 @@ CodeGenerator::genSearchZero(int value)
   if (value > 0) {
     value == 1 ? genNext() : genNextN(value);
   } else {
-    value == -1 ? genPrev() : genPrevN(value);
+    value == -1 ? genPrev() : genPrevN(-value);
   }
   genLoopEnd();
 }

@@ -271,7 +271,7 @@ GeneratorC::genSearchZero(int value)
   } else if (value > 0) {
     std::cout << "for (; *ptr; ptr += " << value << ");\n";
   } else if (value < 0) {
-    std::cout << "for (; *ptr; ptr -= " << value << ");\n";
+    std::cout << "for (; *ptr; ptr -= " << -value << ");\n";
   }
 }
 
