@@ -4,49 +4,57 @@ XBYAK_REPOSITORY := https://github.com/herumi/$(XBYAK_DIR)
 XBYAK_INCS       := -I$(XBYAK_DIR)/
 
 ifeq ($(DEBUG),true)
-    CXXOPTFLAGS := -O0 -g3 -ftrapv -fstack-protector-all -D_FORTIFY_SOURCE=2 -D_GLIBCXX_DEBUG
-    LDLIBS      += -lssp
+    OPT_CFLAGS   := -O0 -g3 -ftrapv -fstack-protector-all -D_FORTIFY_SOURCE=2
+ifneq ($(shell echo $$OSTYPE),cygwin)
+    OPT_CFLAGS   := $(OPT_CFLAGS) -fsanitize=address -fno-omit-frame-pointer
+endif
+    OPT_CXXFLAGS := $(OPT_CFLAGS) -D_GLIBCXX_DEBUG
+    OPT_LDLIBS   := -lssp
 else
 ifeq ($(OPT),true)
-    CXXOPTFLAGS := -flto -Ofast -march=native -DNDEBUG
-    LDOPTFLAGS  := -flto -Ofast -s
+    OPT_CFLAGS   := -flto -Ofast -march=native -DNDEBUG
+    OPT_CXXFLAGS := $(OPT_CFLAGS)
+    OPT_LDFLAGS  := -flto -Ofast -s
 else
 ifeq ($(LTO),true)
-    CXXOPTFLAGS := -flto -DNDEBUG
-    LDOPTFLAGS  := -flto
+    OPT_CFLAGS   := -flto -DNDEBUG
+    OPT_CXXFLAGS := $(OPT_CFLAGS)
+    OPT_LDFLAGS  := -flto
 else
-    CXXOPTFLAGS := -O3 -DNDEBUG
-    LDOPTFLAGS  := -O3 -s
+    OPT_CFLAGS   := -O3 -DNDEBUG
+    OPT_CXXFLAGS := $(OPT_CFLAGS)
+    OPT_LDFLAGS  := -O3 -s
 endif
 endif
 endif
 
-C_WARNING_FLAGS := -Wall -Wextra -Wformat=2 -Wstrict-aliasing=2 \
-                   -Wcast-align -Wcast-qual -Wconversion \
-                   -Wfloat-equal -Wpointer-arith -Wswitch-enum \
-                   -Wwrite-strings -pedantic
-CXX_WARNING_FLAGS := $(C_WARNING_FLAGS) -Woverloaded-virtual
+WARNING_CFLAGS := -Wall -Wextra -Wformat=2 -Wstrict-aliasing=2 \
+                  -Wcast-align -Wcast-qual -Wconversion \
+                  -Wfloat-equal -Wpointer-arith -Wswitch-enum \
+                  -Wwrite-strings -pedantic
+WARNING_CXXFLAGS := $(WARNING_CFLAGS) -Woverloaded-virtual
+
 
 CXX      := g++
 MAKE     := make
 GIT      := git
 INCS     := $(XBYAK_INCS)
 MACROS   := -DUSE_XBYAK -DXBYAK_NO_OP_NAMES
-CXXFLAGS := -pipe $(CXX_WARNING_FLAGS) $(CXXOPTFLAGS) $(INCS) $(MACROS)
-LDFLAGS  := -pipe $(LDOPTFLAGS)
+CXXFLAGS := -pipe $(WARNING_CXXFLAGS) $(OPT_CXXFLAGS) $(INCS) $(MACROS)
+LDFLAGS  := -pipe $(OPT_LDFLAGS)
 
 TARGET   := brainfuck
 MAIN_OBJ := main.o
 OBJ1     := Brainfuck.o
 OBJ2     := BfIRCompiler.o
 OBJ3     := BfJitCompiler.o
-MAIN_SRC := $(MAIN_SRC:%.o=%.cpp)
-SRC1     := $(OBJ1:%.o=%.cpp)
-SRC2     := $(OBJ2:%.o=%.cpp)
-SRC3     := $(OBJ3:%.o=%.cpp)
-HEADER1  := $(OBJ1:%.o=%.h)
-HEADER2  := $(OBJ2:%.o=%.h)
-HEADER3  := $(OBJ3:%.o=%.h)
+MAIN_SRC := $(MAIN_SRC:.o=.cpp)
+SRC1     := $(OBJ1:.o=.cpp)
+SRC2     := $(OBJ2:.o=.cpp)
+SRC3     := $(OBJ3:.o=.cpp)
+HEADER1  := $(OBJ1:.o=.h)
+HEADER2  := $(OBJ2:.o=.h)
+HEADER3  := $(OBJ3:.o=.h)
 GENERATORS := $(addprefix CodeGenerator/, \
                   CodeGenerator.h \
                   _AllGenerator.h \
@@ -75,10 +83,13 @@ else
     TARGET := $(addsuffix .out, $(TARGET))
 endif
 
-%.exe:
-	$(CXX) $(LDFLAGS) $(filter %.c %.cpp %.o, $^) $(LDLIBS) -o $@
-%.out:
-	$(CXX) $(LDFLAGS) $(filter %.c %.cpp %.o, $^) $(LDLIBS) -o $@
+.SUFFIXES: .exe .o .out
+.o.exe:
+	$(CXX) $(LDFLAGS) $(filter %.c %.o, $^) $(LDLIBS) -o $@
+.o.out:
+	$(CXX) $(LDFLAGS) $(filter %.c %.o, $^) $(LDLIBS) -o $@
+.o:
+	$(CXX) $(LDFLAGS) $(filter %.c %.o, $^) $(LDLIBS) -o $@
 
 
 .PHONY: all
@@ -98,7 +109,7 @@ $(OBJ3): $(SRC3) $(HEADER3)
 
 
 $(XBYAK_DIR)/xbyak/xbyak.h:
-	@if [ ! -d $(dir $@) ]; then \
+	@if [ ! -d $(@D) ]; then \
 		$(GIT) clone $(XBYAK_REPOSITORY); \
 	fi
 
