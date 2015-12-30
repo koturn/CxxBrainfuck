@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <iostream>
 #include <stack>
+#include <stdexcept>
 #if __cplusplus >= 201103L
 #  include <cstdint>
 #else
@@ -56,7 +57,7 @@ Brainfuck::load(const char *filename)
 {
   std::ifstream ifs(filename);
   if (ifs.fail()) {
-    throw "Cannot open file";
+    throw std::runtime_error(std::string("Cannot open file: ") + filename);
   }
   ifs.seekg(0, ifs.end);
   std::size_t fileSize = static_cast<std::size_t>(ifs.tellg());
@@ -509,7 +510,7 @@ findLoopEnd(const char *srcptr)
     switch (ch) {
       case '[':  depth++; break;
       case ']':  depth--; break;
-      case '\0': throw "Cannod find the end of loop";
+      case '\0': throw std::runtime_error("Parse error: cannod find the end of loop");
     }
   }
   return srcptr - 1;

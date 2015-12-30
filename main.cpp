@@ -109,12 +109,6 @@ main(int argc, char *argv[])
       }
       fout.write(reinterpret_cast<const char *>(bf.getWinBinary()), bf.getWinBinarySize());
     }
-  } catch (const char *errmsg) {
-    std::cerr << errmsg << std::endl;
-    return EXIT_FAILURE;
-  } catch (std::bad_alloc) {
-    std::cerr << "Cannot allocate memory" << std::endl;
-    return EXIT_FAILURE;
   } catch (std::exception &e) {
     std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;
