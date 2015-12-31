@@ -217,7 +217,7 @@ inline void
 GeneratorC::genGetchar(void)
 {
   genIndent();
-  std::cout << "*ptr = (unsigned char) getchar();";
+  std::cout << "*ptr = (unsigned char) getchar();\n";
 }
 
 
