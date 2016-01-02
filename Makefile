@@ -91,6 +91,11 @@ endif
 .o:
 	$(CXX) $(LDFLAGS) $(filter %.c %.o, $^) $(LDLIBS) -o $@
 
+%.exe:
+	$(CXX) $(LDFLAGS) $(filter %.c %.cpp %.o, $^) $(LDLIBS) -o $@
+%.out:
+	$(CXX) $(LDFLAGS) $(filter %.c %.cpp %.o, $^) $(LDLIBS) -o $@
+
 
 .PHONY: all
 all: $(XBYAK_DIR)/xbyak/xbyak.h $(TARGET)
