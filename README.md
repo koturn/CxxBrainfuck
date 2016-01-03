@@ -119,12 +119,13 @@ Use [msvc.mk](msvc.mk).
 - [hayamiz/dbtimes-vol01](https://github.com/hayamiz/dbtimes-vol01)
 - [7shi/bfexe](https://github.com/7shi/bfexe)
 - [hogelog/fast-bf](https://github.com/hogelog/fast-bf)
+- [A Dumb Guy in a Smart Age: Brainfuck JIT Compiler in Around 155 Lines with GNU C](http://dginasa.blogspot.jp/2012/10/brainfuck-jit-compiler-in-around-155.html)
+- [Optimizing brainfuck compiler](http://www.nayuki.io/page/optimizing-brainfuck-compiler)
 - [alex pankratov](http://www.swapped.cc/#!/bff)
 - [Oleg Mazonka - Languages - Brainfuck](http://mazonka.com/brainf/)
 - [brainfuck optimization strategies |  matslina](http://calmerthanyouare.org/2015/01/07/optimizing-brainfuck.html)
 - [簡易brainf*ckコンパイラを作る part3 - わらばんし仄聞記](http://warabanshi.hatenablog.com/entry/2013/01/05/131602)
 - [実用Brainf*ckプログラミング](http://www.slideshare.net/KMC_JP/brainfck)
-
 
 ## Dependent libraries
 
