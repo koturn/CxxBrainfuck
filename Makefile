@@ -1,4 +1,3 @@
-### This Makefile was written for GNU Make. ###
 XBYAK_DIR        := xbyak
 XBYAK_REPOSITORY := https://github.com/herumi/$(XBYAK_DIR)
 XBYAK_INCS       := -I$(XBYAK_DIR)/
@@ -32,50 +31,28 @@ WARNING_CFLAGS := -Wall -Wextra -Wformat=2 -Wstrict-aliasing=2 \
                   -Wcast-align -Wcast-qual -Wconversion \
                   -Wfloat-equal -Wpointer-arith -Wswitch-enum \
                   -Wwrite-strings -pedantic
-WARNING_CXXFLAGS := $(WARNING_CFLAGS) -Woverloaded-virtual
+WARNING_CXXFLAGS := $(WARNING_CFLAGS) -Weffc++ -Woverloaded-virtual
 
 
-CXX      := g++
-MAKE     := make
-GIT      := git
-INCS     := $(XBYAK_INCS)
-MACROS   := -DUSE_XBYAK -DXBYAK_NO_OP_NAMES
-CXXFLAGS := -pipe $(WARNING_CXXFLAGS) $(OPT_CXXFLAGS) $(INCS) $(MACROS)
-LDFLAGS  := -pipe $(OPT_LDFLAGS)
-
-TARGET   := brainfuck
-MAIN_OBJ := main.o
-OBJ1     := Brainfuck.o
-OBJ2     := BfIRCompiler.o
-OBJ3     := BfJitCompiler.o
-MAIN_SRC := $(MAIN_SRC:.o=.cpp)
-SRC1     := $(OBJ1:.o=.cpp)
-SRC2     := $(OBJ2:.o=.cpp)
-SRC3     := $(OBJ3:.o=.cpp)
-HEADER1  := $(OBJ1:.o=.h)
-HEADER2  := $(OBJ2:.o=.h)
-HEADER3  := $(OBJ3:.o=.h)
-GENERATORS := $(addprefix CodeGenerator/, \
-                  CodeGenerator.h \
-                  _AllGenerator.h \
-                  $(addprefix SourceGenerator/, \
-                      SourceGenerator.h \
-                      $(addprefix Lang/, \
-                          GeneratorC.h \
-                          GeneratorCpp.h \
-                          GeneratorCSharp.h \
-                          GeneratorJava.h \
-                          GeneratorLua.h \
-                          GeneratorPython.h \
-                          GeneratorRuby.h)) \
-                  $(addprefix BinaryGenerator/, \
-                      BinaryGenerator.h \
-                      $(addprefix Arch/, \
-                          GeneratorWinX86.h \
-                          GeneratorElfX64.h \
-                          winsubset.h \
-                          elfsubset.h)))
-
+CC           := gcc $(if $(STDC), $(addprefix -std=, $(STDC)),-std=gnu11)
+CXX          := g++ $(if $(STDCXX), $(addprefix -std=, $(STDCXX)),-std=gnu++14)
+MKDIR        := mkdir -p
+CP           := cp
+RM           := rm -f
+CTAGS        := ctags
+GIT          := git
+MACROS       := -DUSE_XBYAK -DXBYAK_NO_OP_NAMES
+INCS         := $(XBYAK_INCS)
+CFLAGS       := -pipe $(WARNING_CFLAGS) $(OPT_CFLAGS) $(INCS) $(MACROS)
+CXXFLAGS     := -pipe $(WARNING_CXXFLAGS) $(OPT_CXXFLAGS) $(INCS) $(MACROS)
+LDFLAGS      := -pipe $(OPT_LDFLAGS)
+LDLIBS       := $(OPT_LDLIBS)
+CTAGSFLAGS   := -R --languages=c,c++
+TARGET       := Brainfuck
+SRCS         := $(addsuffix .cpp, main Brainfuck BfIRCompiler BfJitCompiler)
+OBJS         := $(SRCS:.cpp=.o)
+INSTALLDIR   := $(if $(PREFIX), $(PREFIX),/usr/local)/bin
+DEPENDS      := depends.mk
 
 ifeq ($(OS),Windows_NT)
     TARGET := $(addsuffix .exe, $(TARGET))
@@ -83,50 +60,44 @@ else
     TARGET := $(addsuffix .out, $(TARGET))
 endif
 
-.SUFFIXES: .exe .o .out
-.o.exe:
-	$(CXX) $(LDFLAGS) $(filter %.c %.o, $^) $(LDLIBS) -o $@
-.o.out:
-	$(CXX) $(LDFLAGS) $(filter %.c %.o, $^) $(LDLIBS) -o $@
-.o:
-	$(CXX) $(LDFLAGS) $(filter %.c %.o, $^) $(LDLIBS) -o $@
-
 %.exe:
-	$(CXX) $(LDFLAGS) $(filter %.c %.cpp %.o, $^) $(LDLIBS) -o $@
+	$(CXX) $(LDFLAGS) $(filter %.c %.cpp %.cxx %.cc %.o, $^) $(LDLIBS) -o $@
 %.out:
-	$(CXX) $(LDFLAGS) $(filter %.c %.cpp %.o, $^) $(LDLIBS) -o $@
+	$(CXX) $(LDFLAGS) $(filter %.c %.cpp %.cxx %.cc %.o, $^) $(LDLIBS) -o $@
 
 
-.PHONY: all
-all: $(XBYAK_DIR)/xbyak/xbyak.h $(TARGET)
+.PHONY: all test depends syntax ctags install uninstall clean cleanobj
+all: $(TARGET)
+$(TARGET): $(OBJS)
 
-$(TARGET): $(MAIN_OBJ) $(OBJ1) $(OBJ2) $(OBJ3)
-
-$(MAIN_OBJ): $(MAIN_SRC)
-
-$(MAIN_SRC): $(HEADER1)
-
-$(OBJ1): $(SRC1) $(HEADER1) $(HEADER2) $(HEADER3) $(GENERATORS)
-
-$(OBJ2): $(SRC2) $(HEADER2)
-
-$(OBJ3): $(SRC3) $(HEADER3)
-
+$(foreach SRC,$(SRCS),$(eval $(subst \,,$(shell $(CXX) -MM $(SRC)))))
 
 $(XBYAK_DIR)/xbyak/xbyak.h:
-	@if [ ! -d $(@D) ]; then \
-		$(GIT) clone $(XBYAK_REPOSITORY); \
-	fi
+	[ ! -d $(@D) ] && $(GIT) clone $(XBYAK_REPOSITORY) || :
 
 
-.PHONY: test
 test:
 	./$(TARGET) -h
 
+depends:
+	$(CXX) -MM $(SRCS) > $(DEPENDS)
 
-.PHONY: clean
+syntax:
+	$(CXX) $(SRCS) $(STD_CXXFLAGS) -fsyntax-only $(WARNING_CXXFLAGS) $(INCS) $(MACROS)
+
+ctags:
+	$(CTAGS) $(CTAGSFLAGS)
+
+install: $(INSTALLDIR)/$(TARGET)
+$(INSTALLDIR)/$(TARGET): $(TARGET)
+	@[ ! -d $(@D) ] && $(MKDIR) $(@D) || :
+	$(CP) $< $@
+
+uninstall:
+	$(RM) $(INSTALLDIR)/$(TARGET)
+
 clean:
-	$(RM) $(TARGET) $(MAIN_OBJ) $(OBJ1) $(OBJ2) $(OBJ3)
-.PHONY: cleanobj
+	$(RM) $(TARGET) $(OBJS)
+
 cleanobj:
-	$(RM) $(MAIN_OBJ) $(OBJ1) $(OBJ2) $(OBJ3)
+	$(RM) $(OBJS)
