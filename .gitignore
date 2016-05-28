@@ -10,3 +10,4 @@ xbyak/
 *.obj
 *.out
 *.pdb
+depends.mk
