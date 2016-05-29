@@ -7,9 +7,10 @@
 #include <stdexcept>
 #if __cplusplus >= 201103L
 #  include <cstdint>
+#  include <memory>
 #else
 #  include <stdint.h>
-#endif
+#endif  // __cplusplus >= 201103L
 
 #ifdef USE_XBYAK
 #  if !defined(XBYAK_NO_OP_NAMES) && defined(__GNUC__)
@@ -24,10 +25,10 @@
 
 
 static const char *
-findLoopEnd(const char *srcptr);
+findLoopEnd(const char* srcptr);
 
 static const char *
-findLoopStart(const char *srcptr);
+findLoopStart(const char* srcptr);
 
 
 
@@ -38,6 +39,7 @@ findLoopStart(const char *srcptr);
 namespace bf {
 
 
+#if __cplusplus < 201103L
 /*!
  * @brief Destructor: Delete alocated memory
  */
@@ -46,6 +48,7 @@ Brainfuck::~Brainfuck(void)
   delete[] sourceBuffer;
   delete[] binCode;
 }
+#endif  // __cplusplus < 201103L
 
 
 /*!
@@ -63,9 +66,14 @@ Brainfuck::load(const char *filename)
   std::size_t fileSize = static_cast<std::size_t>(ifs.tellg());
   ifs.seekg(0, ifs.beg);
 
+#if __cplusplus >= 201103L
+  sourceBuffer.reset(new char[fileSize]);
+  ifs.read(sourceBuffer.get(), fileSize);
+#else
   sourceBuffer = new char[fileSize];
-  sourceBuffer[fileSize - 1] = '\0';
   ifs.read(sourceBuffer, fileSize);
+#endif  // __cplusplus >= 201103L
+  sourceBuffer[fileSize - 1] = '\0';
 }
 
 
@@ -75,8 +83,13 @@ Brainfuck::load(const char *filename)
 void
 Brainfuck::trim(void)
 {
-  const char *srcptr = sourceBuffer;
-  char *dstptr = sourceBuffer;
+#if __cplusplus >= 201103L
+  const char* srcptr = sourceBuffer.get();
+  char* dstptr = sourceBuffer.get();
+#else
+  const char* srcptr = sourceBuffer;
+  char* dstptr = sourceBuffer;
+#endif  // __cplusplus >= 201103L
   for (; *srcptr != '\0'; srcptr++) {
     switch (*srcptr) {
       case '>':
@@ -272,8 +285,13 @@ Brainfuck::generateWinBinary(BinType wbt)
         GeneratorWinX86 g = GeneratorWinX86(irCode);
         g.genCode();
         binCodeSize = g.getSize();
+#if __cplusplus >= 201103L
+        binCode.reset(new unsigned char[binCodeSize]);
+        std::memcpy(binCode.get(), g.getCode(), binCodeSize);
+#else
         binCode = new unsigned char[binCodeSize];
         std::memcpy(binCode, g.getCode(), binCodeSize);
+#endif  // __cplusplus >= 201103L
       }
       break;
     case ELF_BIN_X64:
@@ -281,8 +299,13 @@ Brainfuck::generateWinBinary(BinType wbt)
         GeneratorElfX64 g = GeneratorElfX64(irCode);
         g.genCode();
         binCodeSize = g.getSize();
+#if __cplusplus >= 201103L
+        binCode.reset(new unsigned char[binCodeSize]);
+        std::memcpy(binCode.get(), g.getCode(), binCodeSize);
+#else
         binCode = new unsigned char[binCodeSize];
         std::memcpy(binCode, g.getCode(), binCodeSize);
+#endif  // __cplusplus >= 201103L
       }
       break;
   }
@@ -297,7 +320,11 @@ Brainfuck::generateWinBinary(BinType wbt)
 void
 Brainfuck::normalCompile(void)
 {
+#if __cplusplus >= 201103L
+  irCompiler.setSource(sourceBuffer.get());
+#else
   irCompiler.setSource(sourceBuffer);
+#endif  // __cplusplus >= 201103L
   irCompiler.compile();
   compileType = NORMAL_COMPILE;
 }
@@ -309,10 +336,19 @@ Brainfuck::normalCompile(void)
 void
 Brainfuck::interpretExecute(void) const
 {
-  unsigned char *memory = new unsigned char[memorySize];
-  std::memset(memory, 0, memorySize);
-  unsigned char *ptr = memory;
+#if __cplusplus >= 201103L
+  std::unique_ptr<unsigned char[]> memory(new unsigned char[memorySize]);
+  unsigned char* ptr = memory.get();
+#else
+  unsigned char* memory = new unsigned char[memorySize];
+  unsigned char* ptr = memory;
+#endif
+  std::memset(ptr, 0, memorySize);
+#if __cplusplus >= 201103L
+  for (const char *srcptr = sourceBuffer.get(); *srcptr != '\0'; srcptr++) {
+#else
   for (const char *srcptr = sourceBuffer; *srcptr != '\0'; srcptr++) {
+#endif
     switch (*srcptr) {
       case '>': ptr++;    break;
       case '<': ptr--;    break;
@@ -334,7 +370,9 @@ Brainfuck::interpretExecute(void) const
         break;
     }
   }
+#if __cplusplus < 201103L
   delete[] memory;
+#endif  // __cplusplus < 201103L
 }
 
 
@@ -344,9 +382,14 @@ Brainfuck::interpretExecute(void) const
 void
 Brainfuck::compileExecute(void) const
 {
-  unsigned char *memory = new unsigned char[memorySize];
-  std::memset(memory, 0, memorySize);
-  unsigned char *ptr = memory;
+#if __cplusplus >= 201103L
+  std::unique_ptr<unsigned char[]> memory(new unsigned char[memorySize]);
+  unsigned char* ptr = memory.get();
+#else
+  unsigned char* memory = new unsigned char[memorySize];
+  unsigned char* ptr = memory;
+#endif
+  std::memset(ptr, 0, memorySize);
 
   BfIR irCode = irCompiler.getCode();
   BfIR::size_type size = irCompiler.getSize();
@@ -454,7 +497,9 @@ Brainfuck::compileExecute(void) const
         }
     }
   }
+#if __cplusplus < 201103L
   delete[] memory;
+#endif  // __cplusplus < 201103L
 }
 
 
@@ -479,11 +524,18 @@ Brainfuck::xbyakJitCompile(void)
 void
 Brainfuck::xbyakJitExecute(void)
 {
-  int *xbyakRtStack = new int[xbyakRtStackSize];
+#if __cplusplus >= 201103L
+  std::unique_ptr<int[]> xbyakRtStack(new int[xbyakRtStackSize]);
+  std::memset(xbyakRtStack.get(), 0, xbyakRtStackSize);
+  jitCompiler.getCode<void (*)(int (*)(int), int (*)(), int *)>()
+    (std::putchar, std::getchar, xbyakRtStack.get());
+#else
+  int* xbyakRtStack = new int[xbyakRtStackSize];
   std::memset(xbyakRtStack, 0, xbyakRtStackSize);
   jitCompiler.getCode<void (*)(int (*)(int), int (*)(), int *)>()
     (std::putchar, std::getchar, xbyakRtStack);
   delete[] xbyakRtStack;
+#endif  // __cplusplus >= 201103L
 }
 #endif  // USE_XBYAK
 

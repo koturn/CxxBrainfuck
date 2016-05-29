@@ -3,7 +3,9 @@
 
 
 #include <vector>
-
+#if __cplusplus >= 201103L
+#  include <memory>
+#endif  // __cplusplus >= 201103L
 #ifdef USE_XBYAK
 #  if !defined(XBYAK_NO_OP_NAMES) && defined(__GNUC__)
 #    define  XBYAK_NO_OP_NAMES
@@ -14,6 +16,7 @@
 #include "BfIRCompiler.h"
 #include "BfJitCompiler.h"
 #include "CodeGenerator/CodeGenerator.h"
+#include "compat.h"
 
 
 namespace bf {
@@ -44,13 +47,18 @@ public:
   } BinType;
 
   Brainfuck(std::size_t memorySize=65536) :
-    memorySize(memorySize), sourceBuffer(NULL), compileType(NO_COMPILE)
-    , binCode(NULL), binCodeSize(0)
+    memorySize(memorySize),
+    binCodeSize(0),
+    compileType(NO_COMPILE),
+    sourceBuffer(nullptr),
+    binCode(nullptr)
 #ifdef USE_XBYAK
     , xbyakRtStackSize(XBYAK_RT_STACK_SIZE)
 #endif  // USE_XBYAK
     {}
+#if __cplusplus < 201103L
   ~Brainfuck(void);
+#endif  // __cplusplus < 201103L
 
   void load(const char *filename);
   void trim(void);
@@ -66,11 +74,15 @@ public:
 
 private:
   std::size_t memorySize;
-  char *sourceBuffer;
-  CompileType compileType;
-  unsigned char *binCode;
   std::size_t binCodeSize;
-
+  CompileType compileType;
+#if __cplusplus >= 201103L
+  std::unique_ptr<char[]> sourceBuffer;
+  std::unique_ptr<unsigned char[]> binCode;
+#else
+  char* sourceBuffer;
+  unsigned char* binCode;
+#endif  // __cplusplus >= 201103L
   BfIRCompiler  irCompiler;
   BfJitCompiler jitCompiler;
 #ifdef USE_XBYAK
@@ -83,7 +95,7 @@ private:
   void compileExecute(void) const;
 
   template<class TCodeGenerator>
-    void generateCode(TCodeGenerator &cg);
+    void generateCode(TCodeGenerator& cg);
 #ifdef USE_XBYAK
   void xbyakJitCompile(void);
   void xbyakJitExecute(void);
@@ -98,7 +110,11 @@ private:
 inline const unsigned char *
 Brainfuck::getWinBinary(void) const
 {
+#if __cplusplus >= 201103L
+  return binCode.get();
+#else
   return binCode;
+#endif  // __cplusplus >= 201103L
 }
 
 
