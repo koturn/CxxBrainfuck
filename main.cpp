@@ -6,6 +6,7 @@
 
 #include <getopt.h>
 #include "Brainfuck.h"
+#include "compat.h"
 
 
 class OptionParser {
@@ -17,9 +18,14 @@ public:
   } Status;
 
   OptionParser(int argc, char *argv[]) :
-    argc(argc), optLevel(1), memorySize(DEFAULT_MEMORY_SIZE),
-    status(STATUS_OK), argv(argv), programName(argv[0]), inFilename(NULL),
-    target(NULL) {}
+    argc(argc),
+    optLevel(1),
+    memorySize(DEFAULT_MEMORY_SIZE),
+    status(STATUS_OK),
+    argv(argv),
+    programName(argv[0]),
+    inFilename(nullptr),
+    target(nullptr) {}
   void parse(void);
   void help(void) const;
   int getOptLevel(void) const { return optLevel; }
@@ -34,10 +40,10 @@ private:
   int optLevel;
   std::size_t memorySize;
   Status status;
-  char **argv;
-  const char *programName;
-  const char *inFilename;
-  const char *target;
+  char** argv;
+  const char* programName;
+  const char* inFilename;
+  const char* target;
 };
 
 static bool
@@ -48,9 +54,9 @@ toLowerCase(char *str);
 
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
-static const char *DEFAULT_OUTPUT_FILE_NAME = "a.exe";
+static const char* DEFAULT_OUTPUT_FILE_NAME = "a.exe";
 #else
-static const char *DEFAULT_OUTPUT_FILE_NAME = "a.out";
+static const char* DEFAULT_OUTPUT_FILE_NAME = "a.out";
 #endif
 
 
@@ -60,7 +66,7 @@ static const char *DEFAULT_OUTPUT_FILE_NAME = "a.out";
  * @param [in,out] fp  Output file pointer
  */
 int
-main(int argc, char *argv[])
+main(int argc, char* argv[])
 {
   try {
     OptionParser op(argc, argv);
@@ -84,11 +90,11 @@ main(int argc, char *argv[])
     if (optLevel >= 1) {
       bf.compile(bf::Brainfuck::NORMAL_COMPILE);
     }
-#endif
+#endif  // USE_XBYAK
 
     char *target = const_cast<char *>(op.getTarget());
     bf::Brainfuck::LANG lang;
-    if (target == NULL) {
+    if (target == nullptr) {
       bf.execute();
     } else if (convertTarget(&lang, target)) {
       bf.translate(lang);
@@ -97,7 +103,7 @@ main(int argc, char *argv[])
       if (!std::strcmp(target, "xbyakc")) {
         bf.xbyakDump();
       }
-#endif
+#endif  // USE_XBYAK
       if (!std::strcmp(target, "winx86")) {
         bf.generateWinBinary(bf::Brainfuck::WIN_BIN_X86);
       } else if (!std::strcmp(target, "elfx64")) {
@@ -124,11 +130,11 @@ void
 OptionParser::parse(void)
 {
   static const struct option opts[] = {
-    {"compile",  required_argument, NULL, 'c'},
-    {"help",     no_argument,       NULL, 'h'},
-    {"optimize", required_argument, NULL, 'O'},
-    {"size",     required_argument, NULL, 's'},
-    {0, 0, 0, 0}  // must be filled with zero
+    {"compile",  required_argument, nullptr, 'c'},
+    {"help",     no_argument,       nullptr, 'h'},
+    {"optimize", required_argument, nullptr, 'O'},
+    {"size",     required_argument, nullptr, 's'},
+    {nullptr, 0, nullptr, '\0'}  // must be filled with zero
   };
   int ret;
   int optidx = 0;
@@ -190,7 +196,7 @@ OptionParser::help(void) const
                "      - ruby:   Compile to Python source code\n"
 #ifdef USE_XBYAK
                "      - xbyakc: Compile to C source code dumped from Xbyak Code generator\n"
-#endif
+#endif  // USE_XBYAK
                "      - winx86: Compile to x86 Windows executable binary\n"
                "      - elfx64: Compile to x64 Elf binary\n"
                "  -h, --help\n"
@@ -201,7 +207,7 @@ OptionParser::help(void) const
                "      - 1: Execute with simple compile\n"
 #ifdef USE_XBYAK
                "      - 2: Execute with JIT compile\n"
-#endif
+#endif  // USE_XBYAK
                "    Default value: OPT_LEVEL = 1\n"
                "  -s MEMORY_SIZE, --size=MEMORY_SIZE\n"
                "    Specify memory size\n"
@@ -247,7 +253,7 @@ convertTarget(bf::Brainfuck::LANG *lang, char *target)
  * @param [out] str  C-string
  */
 static void
-toLowerCase(char *str)
+toLowerCase(char* str)
 {
   std::size_t size = std::strlen(str);
   for (std::size_t i = 0; i < size; i++) {

@@ -18,7 +18,9 @@ namespace bf {
 /*!
  * @brief Brainfuck JIT-compiler
  */
-class BfJitCompiler : public Xbyak::CodeGenerator {
+class BfJitCompiler :
+  public Xbyak::CodeGenerator
+{
 private:
   BfIR irCode;
 public:
@@ -26,8 +28,10 @@ public:
   BfJitCompiler(std::size_t size=DEFAULT_GENERATOR_SIZE) :
     CodeGenerator(size) {}
   BfJitCompiler(BfIR &irCode, std::size_t size=DEFAULT_GENERATOR_SIZE) :
-    CodeGenerator(size), irCode(irCode) {}
-  void setIRCode(BfIR &irCode) { this->irCode = irCode; }
+    CodeGenerator(size),
+    irCode(irCode)
+  {}
+  void setIRCode(BfIR& irCode) { this->irCode = irCode; }
   void compile(void);
 };
 #endif  // USE_XBYAK

@@ -8,6 +8,7 @@
 
 #include <cstdlib>
 #include <vector>
+#include "compat.h"
 
 
 namespace bf {
@@ -44,10 +45,12 @@ typedef std::vector<BfInstruction::Command> BfIR;
  */
 class BfIRCompiler {
 public:
-  BfIRCompiler(const char *bfSource=NULL) :
-    bfSource(bfSource) {}
+  BfIRCompiler(const char* bfSource=nullptr) :
+    bfSource(bfSource)
+  {}
 
-  inline void setSource(const char *bfSource) {
+  inline void
+  setSource(const char* bfSource) {
     this->bfSource = bfSource;
   }
   void compile(void);
@@ -55,7 +58,7 @@ public:
   inline BfIR::size_type getSize(void) const { return irCode.size(); };
 
 private:
-  const char *bfSource;
+  const char* bfSource;
   BfIR irCode;
 };
 
