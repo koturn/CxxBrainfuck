@@ -6,7 +6,7 @@
 #ifndef CODE_GENERATOR_H
 #define CODE_GENERATOR_H
 
-#include <cstdlib>
+#include <algorithm>
 #include "../BfIRCompiler.h"
 
 
@@ -54,14 +54,15 @@ public:
     irCode(irCode), code(NULL), codePtr(NULL)
   {
     code = new unsigned char[codeSize];
-    std::memset(code, 0, codeSize);
+    std::fill_n(code, 0, codeSize);
     codePtr = code;
   }
   CodeGenerator(std::size_t codeSize=DEFAULT_MAX_CODE_SIZE) :
-    code(NULL), codePtr(NULL)
+    code(NULL),
+    codePtr(NULL)
   {
     code = new unsigned char[codeSize];
-    std::memset(code, 0, codeSize);
+    std::fill_n(code, 0, codeSize);
     codePtr = code;
   }
   ~CodeGenerator(void)
