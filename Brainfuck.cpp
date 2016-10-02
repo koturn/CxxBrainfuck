@@ -344,7 +344,7 @@ Brainfuck::interpretExecute(void) const
   unsigned char* memory = new unsigned char[memorySize];
   unsigned char* ptr = memory;
 #endif
-  std::fill_n(ptr, 0, memorySize);
+  std::fill_n(ptr, memorySize, 0);
 #if __cplusplus >= 201103L
   for (const char *srcptr = sourceBuffer.get(); *srcptr != '\0'; srcptr++) {
 #else
@@ -390,7 +390,7 @@ Brainfuck::compileExecute(void) const
   unsigned char* memory = new unsigned char[memorySize];
   unsigned char* ptr = memory;
 #endif
-  std::fill_n(ptr, 0, memorySize);
+  std::fill_n(ptr, memorySize, 0);
 
   BfIR irCode = irCompiler.getCode();
   BfIR::size_type size = irCompiler.getSize();
@@ -527,12 +527,12 @@ Brainfuck::xbyakJitExecute(void)
 {
 #if __cplusplus >= 201103L
   std::unique_ptr<int[]> xbyakRtStack(new int[xbyakRtStackSize]);
-  std::fill_n(xbyakRtStack.get(), 0, xbyakRtStackSize);
+  std::fill_n(xbyakRtStack.get(), xbyakRtStackSize, 0);
   jitCompiler.getCode<void (*)(int (*)(int), int (*)(), int *)>()
     (std::putchar, std::getchar, xbyakRtStack.get());
 #else
   int* xbyakRtStack = new int[xbyakRtStackSize];
-  std::fill_n(xbyakRtStack, 0, xbyakRtStackSize);
+  std::fill_n(xbyakRtStack, xbyakRtStackSize, 0);
   jitCompiler.getCode<void (*)(int (*)(int), int (*)(), int *)>()
     (std::putchar, std::getchar, xbyakRtStack);
   delete[] xbyakRtStack;

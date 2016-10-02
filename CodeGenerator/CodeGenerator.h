@@ -54,7 +54,7 @@ public:
     irCode(irCode), code(NULL), codePtr(NULL)
   {
     code = new unsigned char[codeSize];
-    std::fill_n(code, 0, codeSize);
+    std::fill_n(code, codeSize, 0);
     codePtr = code;
   }
   CodeGenerator(std::size_t codeSize=DEFAULT_MAX_CODE_SIZE) :
@@ -62,7 +62,7 @@ public:
     codePtr(NULL)
   {
     code = new unsigned char[codeSize];
-    std::fill_n(code, 0, codeSize);
+    std::fill_n(code, codeSize, 0);
     codePtr = code;
   }
   ~CodeGenerator(void)
